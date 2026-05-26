@@ -14,18 +14,19 @@ Integration (add to app.py):
 Then remove / comment out the old @app.route('/register') in app.py.
 """
 import os
-import resend
+from tracemalloc import start
+from turtle import mode
+from flask import current_app
+from flask_mail import Message
 import random
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta
 
 from flask import (Blueprint, render_template, request, jsonify,
                    session, flash, redirect, url_for, current_app)
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Blueprint
 auth_bp = Blueprint('auth', __name__)
-
-resend.api_key = os.environ.get("RESEND_API_KEY")
 
 # ── Internal helpers ─────────────────────────────────────────────────────────
 
@@ -441,186 +442,43 @@ def _valid_email(email: str) -> bool:
     return bool(re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', email))
 
 
+from flask_mail import Message
+
 def _send_otp_email(email: str, username: str, code: str, mode: str):
-    try:
-
-        if mode == 'verify':
-            subject = "Your Cooking INA Verification Code"
-            headline = "Email Verification"
-            intro = f"""
-            Thanks for joining Cooking INA, <strong>{username}</strong>!
-            Enter the verification code below to activate your account.
-            """
-            footer = """
-            If you did not create an account, you can safely ignore this email.
-            """
-
-        else:
-            subject = "Cooking INA Password Reset Code"
-            headline = "Password Reset"
-            intro = f"""
-            Hi <strong>{username}</strong>!
-            Use the code below to reset your Cooking INA password.
-            """
-            footer = """
-            If you did not request a password reset, you can safely ignore this email.
-            """
-
+    mail = current_app.mail
+    if mode == 'verify':
+        subject = "Your Cooking INA Verification Code"
         html = f"""
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-</head>
+        <h2>Email Verification</h2>
+        <p>Hi {username},</p>
+        <p>Your OTP code is:</p>
+        <h1>{code}</h1>
+        <p>Valid for 5 minutes.</p>
+        """
+    else:
+        subject = "Cooking INA Password Reset Code"
+        html = f"""
+        <h2>Password Reset</h2>
+        <p>Hi {username},</p>
+        <p>Your reset code is:</p>
+        <h1>{code}</h1>
+        <p>Valid for 5 minutes.</p>
+        """
+    start = time.time()
+    try:
+        msg = Message(
+            subject=subject,
+            recipients=[email],
+            html=html,
+            body=f"Your code is {code}"
+        )
 
-<body style="
-    margin:0;
-    padding:0;
-    background:#fdfaf5;
-    font-family:Arial,sans-serif;
-">
-
-<table width="100%" cellpadding="0" cellspacing="0"
-       style="background:#fdfaf5;padding:40px 0;">
-
-<tr>
-<td align="center">
-
-<table width="520" cellpadding="0" cellspacing="0"
-style="
-    background:#ffffff;
-    border-radius:20px;
-    overflow:hidden;
-    max-width:100%;
-">
-
-<tr>
-<td style="
-    background:linear-gradient(135deg,#c8501a,#e8803a);
-    padding:32px 40px;
-    text-align:center;
-">
-
-<h1 style="
-    margin:0;
-    color:white;
-    font-size:30px;
-    font-weight:700;
-">
-Cooking INA
-</h1>
-
-<p style="
-    margin-top:8px;
-    color:rgba(255,255,255,0.85);
-    font-size:14px;
-">
-{headline}
-</p>
-
-</td>
-</tr>
-
-<tr>
-<td style="padding:36px 40px 28px;">
-
-<p style="
-    margin:0 0 20px;
-    font-size:15px;
-    color:#5c4a2a;
-    line-height:1.7;
-">
-{intro}
-</p>
-
-<div style="
-    background:#fdfaf5;
-    border:2px dashed #c8501a;
-    border-radius:14px;
-    padding:28px;
-    text-align:center;
-    margin-bottom:24px;
-">
-
-<p style="
-    margin:0 0 8px;
-    font-size:12px;
-    color:#9c8060;
-    text-transform:uppercase;
-    letter-spacing:2px;
-">
-Your Code
-</p>
-
-<div style="
-    font-size:48px;
-    font-weight:900;
-    letter-spacing:12px;
-    color:#c8501a;
-    font-family:monospace;
-">
-{code}
-</div>
-
-<p style="
-    margin-top:12px;
-    font-size:13px;
-    color:#9c8060;
-">
-Expires in <strong>5 minutes</strong>
-</p>
-
-</div>
-
-<p style="
-    margin:0;
-    font-size:13px;
-    color:#9c8060;
-    line-height:1.6;
-">
-{footer}
-</p>
-
-</td>
-</tr>
-
-<tr>
-<td style="
-    background:#f4efe6;
-    padding:18px 40px;
-    text-align:center;
-    border-top:1px solid #ede5d8;
-">
-
-<p style="
-    margin:0;
-    font-size:12px;
-    color:#9c8060;
-">
-Cooking INA — Filipino Recipe Platform
-</p>
-
-</td>
-</tr>
-
-</table>
-
-</td>
-</tr>
-</table>
-
-</body>
-</html>
-"""
-
-        resend.Emails.send({
-            "from": "Cooking INA <noreply@cookingina.online>",
-            "to": email,
-            "subject": subject,
-            "html": html
-        })
-
+        current_app.logger.info("➡️ ABOUT TO SEND EMAIL")
+        mail.send(msg)
+        current_app.logger.info(f"✅ EMAIL SENT in {time.time() - start}s")
+      
         return True, None
 
     except Exception as e:
+        current_app.logger.error(f"MAIL ERROR: {e}")
         return False, str(e)

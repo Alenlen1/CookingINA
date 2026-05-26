@@ -1,5 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
+from flask import Flask
+from flask_mail import Mail
 import os
 import psycopg2
 import psycopg2.extras
@@ -13,7 +15,22 @@ from chatbot import chatbot_bp
 from routes.auth import auth_bp     
 # ── App setup ──────────────────────────────────────────────────────────────
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'Cooking INA-secret-key-change-in-prod')
+app.secret_key = os.environ.get("SECRET_KEY", "dev")
+mail = Mail(app)
+# ── Gmail SMTP CONFIG ─────────────────────
+app.config.update(
+    MAIL_SERVER="smtp.gmail.com",
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USE_SSL=False,
+    MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
+    MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
+    MAIL_DEFAULT_SENDER=os.environ.get("MAIL_USERNAME"),
+)
+
+mail.init_app(app)
+app.mail = mail 
+# IMPORTANT: expose mail to blueprint
 app.register_blueprint(auth_bp)
 app.register_blueprint(chatbot_bp)
 
