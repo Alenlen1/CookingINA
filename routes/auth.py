@@ -15,7 +15,6 @@ Then remove / comment out the old @app.route('/register') in app.py.
 """
 import os
 from tracemalloc import start
-from turtle import mode
 from flask import current_app
 from flask_mail import Message
 import random
