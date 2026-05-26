@@ -114,12 +114,21 @@ def register_initiate():
         'attempts': 0,
     }
     session.modified = True
+    
+    #delete pag di gumana
+    print("OTP CODE:", code)
+
+    return jsonify({
+    'ok': True,
+    'email': email,
+    'message': 'OTP generated (email disabled for testing)'
+})
 
     # ── Send email ────────────────────────────────────────────────────────
-    ok, err = _send_otp_email(email, username, code, 'verify')
-    if not ok:
-        return jsonify({'ok': False,
-                        'error': f'Could not send email: {err}. Check Gmail App Password setup.'}), 500
+    #ok, err = _send_otp_email(email, username, code, 'verify')
+   # if not ok:
+        #return jsonify({'ok': False,
+                        #'error': f'Could not send email: {err}. Check Gmail App Password setup.'}), 500
 
     return jsonify({'ok': True, 'email': email,
                     'message': f'Verification code sent to {email}'})
