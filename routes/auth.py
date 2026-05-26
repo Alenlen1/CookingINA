@@ -442,40 +442,36 @@ def _valid_email(email: str) -> bool:
 
 
 from flask_mail import Message
+def _mail():
+    return current_app.extensions.get("mail")
 
 def _send_otp_email(email: str, username: str, code: str, mode: str):
-    mail = current_app.mail
-    if mode == 'verify':
-        subject = "Your Cooking INA Verification Code"
-        html = f"""
-        <h2>Email Verification</h2>
-        <p>Hi {username},</p>
-        <p>Your OTP code is:</p>
-        <h1>{code}</h1>
-        <p>Valid for 5 minutes.</p>
-        """
-    else:
-        subject = "Cooking INA Password Reset Code"
-        html = f"""
-        <h2>Password Reset</h2>
-        <p>Hi {username},</p>
-        <p>Your reset code is:</p>
-        <h1>{code}</h1>
-        <p>Valid for 5 minutes.</p>
-        """
-    start = time.time()
     try:
+        subject = (
+            "Your Cooking INA Verification Code"
+            if mode == "verify"
+            else "Cooking INA Password Reset Code"
+        )
+
+        html = f"""
+        <h2>{subject}</h2>
+        <p>Hi {username},</p>
+        <h1>{code}</h1>
+        <p>Expires in 5 minutes.</p>
+        """
+
+        mail = current_app.extensions["mail"]
+
         msg = Message(
             subject=subject,
             recipients=[email],
             html=html,
-            body=f"Your code is {code}"
+            body=f"Your code is {code}",
+            sender=current_app.config["MAIL_USERNAME"]
         )
 
-        current_app.logger.info("➡️ ABOUT TO SEND EMAIL")
         mail.send(msg)
-        current_app.logger.info(f"✅ EMAIL SENT in {time.time() - start}s")
-      
+
         return True, None
 
     except Exception as e:
