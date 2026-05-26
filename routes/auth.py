@@ -13,7 +13,7 @@ Integration (add to app.py):
 
 Then remove / comment out the old @app.route('/register') in app.py.
 """
-
+import os
 import random
 import string
 from datetime import datetime, timedelta
@@ -447,6 +447,8 @@ def _valid_email(email: str) -> bool:
 def _send_otp_email(email: str, username: str, code: str, mode: str):
     from flask_mail import Message
     mail = _mail()
+    print("MAIL USER:", os.environ.get("MAIL_USERNAME"))
+    print("MAIL PASS LEN:", len(os.environ.get("MAIL_PASSWORD") or ""))
     if not mail:
         return False, 'Mail not configured.'
 
