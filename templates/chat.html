@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en" id="htmlRoot">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>INA Chat — Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/chatbot.css') }}"
+    />
+  </head>
+  <body id="bodyRoot">
+    <!-- ── HEADER ───────────────────────────────────────────────────────────── -->
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        <div class="nav-user">
+          <a href="{{ url_for('index') }}" class="nav-link">Home</a>
+          <a href="{{ url_for('my_recipes') }}" class="nav-link">My Recipes</a>
+          {% if user_is_admin %}
+          <a href="{{ url_for('admin_dashboard') }}" class="nav-link">Admin</a>
+          {% endif %}
+          <a
+            href="{{ url_for('user_profile', username=user.username) }}"
+            class="nav-avatar"
+            title="{{ user.username }}"
+          >
+            {% if user.profile_image %}
+            <img
+              src="{{ url_for('static', filename=user.profile_image) }}"
+              alt="{{ user.username }}"
+            />
+            {% else %}👤{% endif %}
+          </a>
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── CHAT LAYOUT ──────────────────────────────────────────────────────── -->
+    <div class="chat-layout">
+      <!-- Sidebar -->
+      <aside class="chat-sidebar" id="chatSidebar">
+        <div class="chat-sidebar-header">
+          <button class="new-chat-btn" onclick="createNewConversation()">
+            <span>✏️</span> New Chat
+          </button>
+        </div>
+
+        <div class="conv-search-wrap">
+          <input
+            type="text"
+            id="convSearch"
+            placeholder="🔍 Search chats..."
+            oninput="filterConversations()"
+          />
+        </div>
+
+        <div class="conv-list" id="convList">
+          {% for conv in conversations %}
+          <div
+            class="conv-item {% if conv.id == active_conv_id %}active{% endif %}"
+            data-id="{{ conv.id }}"
+            data-title="{{ conv.title }}"
+            onclick="loadConversation({{ conv.id }})"
+          >
+            <div class="conv-title">{{ conv.title }}</div>
+            <div class="conv-meta">
+              {{ conv.updated_at.strftime('%b %d') if conv.updated_at else '' }}
+            </div>
+            <button
+              class="conv-delete-btn"
+              onclick="event.stopPropagation(); deleteConversation({{ conv.id }}, this)"
+              title="Delete"
+            >
+              🗑
+            </button>
+          </div>
+          {% else %}
+          <div class="conv-empty" id="convEmpty">No conversations yet</div>
+          {% endfor %}
+        </div>
+      </aside>
+
+      <!-- Mobile sidebar toggle -->
+      <button
+        class="sidebar-toggle"
+        id="sidebarToggle"
+        onclick="toggleSidebar()"
+        title="Toggle history"
+      >
+        ☰
+      </button>
+
+      <!-- Main chat area -->
+      <main class="chat-main" id="chatMain">
+        {% if not gemini_configured %}
+        <div class="api-warning">
+          ⚠️ <strong>Gemini API not configured.</strong> Set
+          <code>GEMINI_API_KEY</code> in your environment to enable AI features.
+          <a href="https://aistudio.google.com/apikey" target="_blank"
+            >Get a free key →</a
+          >
+        </div>
+        {% endif %}
+
+        <!-- Chat header bar -->
+        <div class="chat-topbar">
+          <div class="chat-title-area">
+            <span class="chat-ai-icon">🍳</span>
+            <div>
+              <div class="chat-ai-name">INA</div>
+              <div class="chat-ai-sub">Your Filipino Cooking Assistant</div>
+            </div>
+          </div>
+          <div class="chat-topbar-actions">
+            <button
+              class="topbar-btn"
+              onclick="clearCurrentChat()"
+              title="Clear chat"
+            >
+              🗑 Clear
+            </button>
+            <a
+              href="{{ url_for('chatbot.chat_page') }}"
+              class="topbar-btn"
+              title="New chat"
+              >✏️ New</a
+            >
+          </div>
+        </div>
+
+        <!-- Messages area -->
+        <div class="chat-messages" id="chatMessages">
+          {% if not active_conv_id or not messages %}
+          <!-- Welcome screen -->
+          <div class="chat-welcome" id="chatWelcome">
+            <div class="welcome-icon">🍳</div>
+            <h2>Kumusta! I'm INA</h2>
+            <p>
+              Your personal Filipino cooking assistant. Ask me anything about
+              recipes, ingredients, cooking tips, or meal planning!
+            </p>
+
+            <div class="quick-suggestions">
+              <button
+                class="suggestion-btn"
+                onclick="
+                  sendSuggestion(
+                    'Suggest popular Filipino dishes to cook this week',
+                  )
+                "
+              >
+                🇵🇭 Suggest Filipino dishes
+              </button>
+              <button
+                class="suggestion-btn"
+                onclick="
+                  sendSuggestion(
+                    'What can I cook with eggs, onion, and garlic?',
+                  )
+                "
+              >
+                🥚 What can I cook with eggs?
+              </button>
+              <button
+                class="suggestion-btn"
+                onclick="sendSuggestion('Give me healthy Filipino meal ideas')"
+              >
+                🥗 Healthy meals
+              </button>
+              <button
+                class="suggestion-btn"
+                onclick="
+                  sendSuggestion(
+                    'What are some budget-friendly Filipino recipes under ₱150?',
+                  )
+                "
+              >
+                💰 Budget recipes
+              </button>
+              <button
+                class="suggestion-btn"
+                onclick="
+                  sendSuggestion(
+                    'Give me quick breakfast ideas I can make in 10 minutes',
+                  )
+                "
+              >
+                ⏱ Quick breakfast ideas
+              </button>
+              <button
+                class="suggestion-btn"
+                onclick="
+                  sendSuggestion(
+                    'What are good ingredient substitutions for coconut milk?',
+                  )
+                "
+              >
+                🔄 Ingredient substitutions
+              </button>
+            </div>
+          </div>
+          {% else %}
+          <!-- Render existing messages -->
+          {% for msg in messages %}
+          <div
+            class="msg-row {% if msg.role == 'user' %}msg-user{% else %}msg-ai{% endif %}"
+          >
+            {% if msg.role == 'assistant' %}
+            <div class="msg-avatar ai-avatar">🍳</div>
+            {% endif %}
+            <div class="msg-bubble">
+              <div
+                class="msg-content {% if msg.role == 'assistant' %}markdown-content{% endif %}"
+              >
+                {% if msg.role == 'assistant' %} {{ msg.content }} {% else %} {{
+                msg.content }} {% endif %}
+              </div>
+              <div class="msg-time">
+                {{ msg.created_at.strftime('%I:%M %p') if msg.created_at else ''
+                }}
+              </div>
+            </div>
+            {% if msg.role == 'user' %}
+            <div class="msg-avatar user-avatar">
+              {% if user.profile_image %}
+              <img
+                src="{{ url_for('static', filename=user.profile_image) }}"
+                alt=""
+              />
+              {% else %}👤{% endif %}
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %} {% endif %}
+        </div>
+
+        <!-- Typing indicator (hidden by default) -->
+        <div
+          class="typing-indicator"
+          id="typingIndicator"
+          style="display: none"
+        >
+          <div class="msg-avatar ai-avatar">🍳</div>
+          <div class="typing-dots"><span></span><span></span><span></span></div>
+        </div>
+
+        <!-- Input area -->
+        <div class="chat-input-area">
+          <div class="chat-input-wrap">
+            <textarea
+              id="chatInput"
+              class="chat-textarea"
+              placeholder="Ask INA anything about cooking..."
+              rows="1"
+              maxlength="2000"
+              oninput="autoResize(this)"
+              onkeydown="handleChatKey(event)"
+            ></textarea>
+
+            <div class="chat-input-actions">
+              <button
+                class="voice-input-btn"
+                id="voiceInputBtn"
+                onclick="toggleChatVoice()"
+                title="Voice input"
+              >
+                🎤
+              </button>
+              <button
+                class="voice-input-btn"
+                id="muteSpeakBtn"
+                onclick="toggleSpeak()"
+                title="Mute INA"
+              >
+                🔊
+              </button>
+
+              <button
+                class="send-btn"
+                id="sendBtn"
+                onclick="sendChatMessage()"
+                title="Send"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="char-counter" id="charCounter">0 / 2000</div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Pass data to JS -->
+    <script>
+      const CHAT_ACTIVE_CONV_ID = {{ active_conv_id|tojson }};
+      const CHAT_USER_IMAGE = {{ (url_for('static', filename=user.profile_image) if user.profile_image else '')|tojson }};
+      const LOGGED_IN = true;
+      const SESSION_USER_ID = {{ user.id }};
+    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+    <script>
+      // Initialize page-specific chat state
+      let currentConvId = CHAT_ACTIVE_CONV_ID;
+      // Render existing messages as markdown if any
+      document.querySelectorAll(".markdown-content").forEach((el) => {
+        el.innerHTML = renderMarkdown(el.textContent.trim());
+      });
+      // Scroll to bottom on load
+      scrollToBottom(false);
+      const aiMessages = document.querySelectorAll(".msg-ai .msg-content");
+      if (aiMessages.length > 0) {
+        lastReply = aiMessages[aiMessages.length - 1].textContent.trim();
+      }
+    </script>
+  </body>
+</html>

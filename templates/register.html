@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register — Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400;1,9..144,700&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/auth_modals.css') }}"
+    />
+  </head>
+  <body id="bodyRoot">
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for
+    category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <div class="auth-page">
+      <div class="auth-card">
+        <div class="auth-logo">Cooking <span>INA</span></div>
+        <h2 class="auth-title">Create account</h2>
+        <p class="auth-sub">Join Cooking INA and share your recipes</p>
+
+        <div
+          id="regError"
+          class="auth-banner auth-banner-error"
+          style="display: none"
+        ></div>
+
+        <div class="auth-form" id="regForm">
+          <div class="form-group">
+            <label>Username</label>
+            <input
+              type="text"
+              id="regUsername"
+              name="username"
+              required
+              placeholder="your_username"
+              autocomplete="username"
+              oninput="clearBanner('regError')"
+            />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              id="regEmail"
+              name="email"
+              required
+              placeholder="you@email.com"
+              autocomplete="email"
+              oninput="clearBanner('regError')"
+            />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <div class="pw-wrap">
+              <input
+                type="password"
+                id="regPassword"
+                name="password"
+                required
+                placeholder="Min. 8 characters"
+                autocomplete="new-password"
+                oninput="checkPwStrength(this.value)"
+              />
+              <button
+                type="button"
+                class="pw-toggle"
+                onclick="togglePw('regPassword', this)"
+                tabindex="-1"
+              >
+                👁
+              </button>
+            </div>
+            <div class="pw-strength" id="pwStrength" style="display: none">
+              <div class="pw-bar"><div class="pw-fill" id="pwFill"></div></div>
+              <span id="pwLabel"></span>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Confirm Password</label>
+            <div class="pw-wrap">
+              <input
+                type="password"
+                id="regConfirm"
+                name="confirm"
+                required
+                placeholder="Repeat password"
+                autocomplete="new-password"
+              />
+              <button
+                type="button"
+                class="pw-toggle"
+                onclick="togglePw('regConfirm', this)"
+                tabindex="-1"
+              >
+                👁
+              </button>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn-primary"
+            id="regBtn"
+            onclick="initiateRegister()"
+          >
+            <span id="regBtnText">Create Account</span>
+            <span id="regBtnSpinner" class="btn-spinner" style="display: none"
+              >⏳</span
+            >
+          </button>
+        </div>
+        <p class="auth-switch">
+          Already have an account? <a href="{{ url_for('login') }}">Log in</a>
+        </p>
+      </div>
+    </div>
+    <div class="otp-overlay" id="otpOverlay">
+      <div class="otp-modal" id="otpModal">
+        <div class="otp-icon">📧</div>
+        <h3 class="otp-title">Check your email</h3>
+        <p class="otp-sub" id="otpSubText">
+          We sent a 6-digit code to <strong id="otpEmailDisplay"></strong>
+        </p>
+
+        <div
+          id="otpError"
+          class="auth-banner auth-banner-error"
+          style="display: none"
+        ></div>
+        <div
+          id="otpSuccess"
+          class="auth-banner auth-banner-success"
+          style="display: none"
+        ></div>
+
+        <div class="otp-inputs" id="otpInputs">
+          <input
+            class="otp-digit"
+            type="text"
+            maxlength="1"
+            inputmode="numeric"
+            pattern="[0-9]"
+            oninput="otpInput(this, 0)"
+            onkeydown="otpBack(event, this, 0)"
+            autocomplete="off"
+          />
+          <input
+            class="otp-digit"
+            type="text"
+            maxlength="1"
+            inputmode="numeric"
+            pattern="[0-9]"
+            oninput="otpInput(this, 1)"
+            onkeydown="otpBack(event, this, 1)"
+            autocomplete="off"
+          />
+          <input
+            class="otp-digit"
+            type="text"
+            maxlength="1"
+            inputmode="numeric"
+            pattern="[0-9]"
+            oninput="otpInput(this, 2)"
+            onkeydown="otpBack(event, this, 2)"
+            autocomplete="off"
+          />
+          <input
+            class="otp-digit"
+            type="text"
+            maxlength="1"
+            inputmode="numeric"
+            pattern="[0-9]"
+            oninput="otpInput(this, 3)"
+            onkeydown="otpBack(event, this, 3)"
+            autocomplete="off"
+          />
+          <input
+            class="otp-digit"
+            type="text"
+            maxlength="1"
+            inputmode="numeric"
+            pattern="[0-9]"
+            oninput="otpInput(this, 4)"
+            onkeydown="otpBack(event, this, 4)"
+            autocomplete="off"
+          />
+          <input
+            class="otp-digit"
+            type="text"
+            maxlength="1"
+            inputmode="numeric"
+            pattern="[0-9]"
+            oninput="otpInput(this, 5)"
+            onkeydown="otpBack(event, this, 5)"
+            autocomplete="off"
+          />
+        </div>
+
+        <button
+          class="btn-primary otp-submit-btn"
+          id="otpVerifyBtn"
+          onclick="verifyRegCode()"
+        >
+          <span id="otpVerifyText">Verify & Create Account</span>
+          <span id="otpVerifySpinner" class="btn-spinner" style="display: none"
+            >⏳</span
+          >
+        </button>
+
+        <div class="otp-resend-row">
+          <span class="otp-resend-label">Didn't receive it?</span>
+          <button
+            class="otp-resend-btn"
+            id="otpResendBtn"
+            onclick="resendRegCode()"
+          >
+            Resend Code
+          </button>
+          <span
+            class="otp-countdown"
+            id="otpCountdown"
+            style="display: none"
+          ></span>
+        </div>
+
+        <button class="otp-back-btn" onclick="closeOtpModal()">
+          ← Change email
+        </button>
+      </div>
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+  </body>
+</html>

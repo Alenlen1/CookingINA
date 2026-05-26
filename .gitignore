@@ -1,0 +1,35 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Environment variables (NEVER commit - contains API keys!)
+.env
+
+# Uploads (optional but recommended if user uploads files)
+static/uploads/
+
+
+# Database
+*.db
+*.sqlite3
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Flask
+instance/
+flask_session/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

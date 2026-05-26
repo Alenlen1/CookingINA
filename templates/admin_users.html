@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Users — Admin — Cooking INA</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+  </head>
+  <body id="bodyRoot">
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        <div class="nav-user">
+          <a href="{{ url_for('admin_dashboard') }}" class="nav-link"
+            >← Admin Panel</a
+          >
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        </div>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for
+    category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <div class="main" style="padding-top: 32px">
+      <div class="section-title">👥 All Users ({{ users|length }})</div>
+
+      <div style="overflow-x: auto; margin-top: 20px">
+        <table class="review-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Recipes</th>
+              <th>Reviews</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in users %}
+            <tr>
+              <td>
+                <div class="user-cell">
+                  <div class="user-avatar-sm">
+                    {% if u.profile_image %}
+                    <img
+                      src="{{ url_for('static', filename=u.profile_image) }}"
+                      alt=""
+                    />
+                    {% else %}👤{% endif %}
+                  </div>
+                  <div>
+                    <a
+                      href="{{ url_for('user_profile', username=u.username) }}"
+                      style="font-weight: 600; color: var(--text1)"
+                      >{{ u.username }}</a
+                    >
+                  </div>
+                </div>
+              </td>
+              <td style="color: var(--text3); font-size: 0.85rem">
+                {{ u.email }}
+              </td>
+              <td>
+                <span class="role-pill role-{{ u.role }}"
+                  >{{ u.role.upper() }}</span
+                >
+              </td>
+              <td style="text-align: center">{{ u.recipe_count }}</td>
+              <td style="text-align: center">{{ u.review_count }}</td>
+              <td style="font-size: 0.82rem; color: var(--text3)">
+                {{ u.created_at.strftime('%b %Y') }}
+              </td>
+              <td>
+                {% if u.role == 'user' %}
+                <form
+                  method="POST"
+                  action="{{ url_for('admin_promote', uid=u.id) }}"
+                  style="display: inline"
+                >
+                  <button
+                    type="submit"
+                    class="btn-promote"
+                    onclick="return confirm('Promote {{ u.username }} to admin?')"
+                  >
+                    ⬆ Promote
+                  </button>
+                </form>
+                <form
+                  method="POST"
+                  action="{{ url_for('admin_delete_user', uid=u.id) }}"
+                  style="display: inline"
+                >
+                  <button
+                    type="submit"
+                    class="btn-reject-open"
+                    onclick="return confirm('Delete {{ u.username }}? This cannot be undone.')"
+                  >
+                    🗑 Delete
+                  </button>
+                </form>
+                {% elif u.role == 'admin' and u.id != user.id %}
+                <form
+                  method="POST"
+                  action="{{ url_for('admin_demote', uid=u.id) }}"
+                  style="display: inline"
+                >
+                  <button
+                    type="submit"
+                    class="btn-demote"
+                    onclick="return confirm('Demote {{ u.username }} to user?')"
+                  >
+                    ⬇ Demote
+                  </button>
+                </form>
+                {% else %}
+                <span style="font-size: 0.8rem; color: var(--text3)">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>

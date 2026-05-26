@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Ingredients — {{ recipe.name }} — Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+  </head>
+  <body id="bodyRoot">
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        <div class="nav-user">
+          <a href="{{ url_for('admin_ingredients') }}" class="nav-link"
+            >← Ingredients</a
+          >
+          <a href="{{ url_for('admin_dashboard') }}" class="nav-link"
+            >Admin Panel</a
+          >
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        </div>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for
+    category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <div class="main" style="padding-top: 32px; max-width: 700px">
+      <!-- Recipe info bar -->
+      <div class="recipe-info-bar">
+        <div class="emoji">{{ recipe.emoji }}</div>
+        <div>
+          <div class="title">{{ recipe.name }}</div>
+          <div class="meta">
+            by {{ recipe.username }} &nbsp;·&nbsp; ⏱ {{ recipe.cook_time }}
+            &nbsp;·&nbsp; 👥 {{ recipe.servings }} servings &nbsp;·&nbsp;
+            <span
+              style="color:{% if recipe.status == 'approved' %}#22c55e{% elif recipe.status == 'pending' %}#f59e0b{% else %}#ef4444{% endif %}"
+            >
+              {{ recipe.status.upper() }}
+            </span>
+          </div>
+        </div>
+        <div style="margin-left: auto; display: flex; gap: 8px; flex-shrink: 0">
+          <a
+            href="{{ url_for('edit_recipe', recipe_id=recipe.id) }}"
+            class="btn-secondary"
+            style="font-size: 0.82rem; padding: 6px 14px; text-decoration: none"
+            >✏️ Full Edit</a
+          >
+        </div>
+      </div>
+
+      <!-- Ingredient editor -->
+      <div class="ing-editor">
+        <div class="ing-editor-header">
+          <h3>🧂 Ingredients</h3>
+          <span style="font-size: 0.85rem; color: var(--text3)" id="ingCount">
+            {{ ingredients|length }} ingredient{{ 's' if ingredients|length != 1
+            }}
+          </span>
+        </div>
+
+        <div id="ingredientRows">
+          {% if ingredients %} {% for ing in ingredients %}
+          <div class="ing-row" data-id="{{ ing.id }}">
+            <span class="drag-handle">⠿</span>
+            <span class="num">{{ loop.index }}</span>
+            <input
+              class="ing-input-name"
+              type="text"
+              value="{{ ing.name }}"
+              oninput="markDirty(this)"
+              placeholder="Ingredient name"
+            />
+            <div class="ing-peso-wrap">
+              <span class="ing-peso-sym">₱</span>
+              <input
+                class="ing-input-price"
+                type="number"
+                value="{{ ing.price }}"
+                min="0"
+                oninput="
+                  markDirty(this);
+                  updateTotal();
+                "
+                placeholder="0"
+              />
+            </div>
+            <button class="ing-save-btn" onclick="saveIngredient(this)">
+              💾 Save
+            </button>
+            <button
+              class="ing-del-btn"
+              onclick="deleteIngredient(this, {{ ing.id }})"
+            >
+              🗑
+            </button>
+          </div>
+          {% endfor %} {% else %}
+          <div class="empty-ingredients" id="emptyMsg">
+            <div class="icon">🧂</div>
+            <p>No ingredients yet. Add the first one below!</p>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Add new -->
+        <div class="add-ing-row">
+          <input
+            type="text"
+            class="name-in"
+            id="newIngName"
+            placeholder="New ingredient name"
+            maxlength="100"
+          />
+          <span style="color: var(--text3)">₱</span>
+          <input
+            type="number"
+            class="price-in"
+            id="newIngPrice"
+            placeholder="Price"
+            min="0"
+            value="0"
+          />
+          <button class="add-ing-btn" onclick="addIngredient()">+ Add</button>
+        </div>
+
+        <!-- Cost total -->
+        <div class="cost-bar">
+          <span style="color: var(--text3)">Estimated total cost</span>
+          <span class="total" id="totalCost"
+            >₱{{ '{:,}'.format(ingredients|sum(attribute='price')|int) }}</span
+          >
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; display: flex; gap: 10px">
+        <a href="{{ url_for('admin_ingredients') }}" class="btn-secondary"
+          >← Back to all recipes</a
+        >
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>

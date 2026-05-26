@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ingredients — Admin — Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+    <style></style>
+  </head>
+  <body id="bodyRoot">
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        <div class="nav-user">
+          <a href="{{ url_for('admin_dashboard') }}" class="nav-link"
+            >← Admin Panel</a
+          >
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        </div>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for
+    category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <div class="main" style="padding-top: 32px">
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+          flex-wrap: wrap;
+          gap: 12px;
+        "
+      >
+        <div class="section-title" style="margin-bottom: 0">
+          🧂 Ingredient Manager
+        </div>
+        <span style="font-size: 0.88rem; color: var(--text3)"
+          >{{ recipes|length }} recipes total</span
+        >
+      </div>
+
+      <!-- Search filter -->
+      <div class="search-box">
+        <input
+          type="text"
+          id="recipeSearch"
+          placeholder="🔍 Filter recipes by name..."
+          oninput="filterTable()"
+        />
+      </div>
+
+      <div style="overflow-x: auto">
+        <table class="ing-table" id="recipeTable">
+          <thead>
+            <tr>
+              <th>Recipe</th>
+              <th>By</th>
+              <th>Status</th>
+              <th>Ingredients</th>
+              <th>Est. Cost</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in recipes %}
+            <tr>
+              <td>
+                <div class="recipe-cell">
+                  <div class="recipe-emoji">{{ r.emoji }}</div>
+                  <div>
+                    <div class="recipe-name">{{ r.name }}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="color: var(--text3); font-size: 0.85rem">
+                <a
+                  href="{{ url_for('user_profile', username=r.username) }}"
+                  style="color: var(--accent)"
+                  >{{ r.username }}</a
+                >
+              </td>
+              <td>
+                <span class="status-pill pill-{{ r.status }}"
+                  >{{ r.status.upper() }}</span
+                >
+              </td>
+              <td>
+                {% if r.ingredient_count == 0 %}
+                <span class="count-badge count-zero">⚠ None</span>
+                {% elif r.ingredient_count < 3 %}
+                <span class="count-badge count-low"
+                  >{{ r.ingredient_count }} items</span
+                >
+                {% else %}
+                <span class="count-badge count-ok"
+                  >{{ r.ingredient_count }} items</span
+                >
+                {% endif %}
+              </td>
+              <td style="font-weight: 600">
+                ₱{{ '{:,}'.format(r.total_cost|int) }}
+              </td>
+              <td>
+                <a
+                  href="{{ url_for('admin_edit_ingredients', recipe_id=r.id) }}"
+                  class="btn-primary"
+                  style="
+                    font-size: 0.82rem;
+                    padding: 6px 14px;
+                    text-decoration: none;
+                  "
+                >
+                  🧂 Edit Ingredients
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script>
+      function filterTable() {
+        const q = document.getElementById("recipeSearch").value.toLowerCase();
+        document.querySelectorAll("#recipeTable tbody tr").forEach((row) => {
+          const name = row
+            .querySelector(".recipe-name")
+            .textContent.toLowerCase();
+          row.style.display = name.includes(q) ? "" : "none";
+        });
+      }
+    </script>
+  </body>
+</html>

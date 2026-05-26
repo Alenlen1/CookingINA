@@ -1,0 +1,359 @@
+<!doctype html>
+<html lang="en" id="htmlRoot">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Panel — Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+  </head>
+  <body id="bodyRoot">
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        <div class="nav-user">
+          <a href="{{ url_for('admin_users') }}" class="nav-link">Users</a>
+          <a href="{{ url_for('index') }}" class="nav-link">Homepage</a>
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        </div>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for
+    category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <div class="main" style="padding-top: 32px">
+      <!-- Admin header banner -->
+      <div
+        class="admin-header"
+        style="
+          margin: -0px -0px 32px;
+          padding: 28px 32px 20px;
+          border-radius: 16px;
+        "
+      >
+        <h1>🛡️ Admin Dashboard</h1>
+        <p>Manage recipe approvals, users, and site content.</p>
+        <div class="admin-nav">
+          <a href="{{ url_for('admin_dashboard') }}">📋 Recipes</a>
+          <a href="{{ url_for('admin_ingredients') }}">🧂 Ingredients</a>
+          <a href="{{ url_for('admin_users') }}">👥 Users</a>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div class="stat-grid">
+        <div class="stat-card pending">
+          <div class="num">{{ stats.pending }}</div>
+          <div class="lbl">⏳ Pending</div>
+        </div>
+        <div class="stat-card approved">
+          <div class="num">{{ stats.approved }}</div>
+          <div class="lbl">✅ Approved</div>
+        </div>
+        <div class="stat-card rejected">
+          <div class="num">{{ stats.rejected }}</div>
+          <div class="lbl">❌ Rejected</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">{{ stats.total }}</div>
+          <div class="lbl">📦 Total Recipes</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">{{ user_count }}</div>
+          <div class="lbl">👤 Users</div>
+        </div>
+        <div
+          class="stat-card"
+          style="cursor: pointer"
+          onclick="location.href='{{ url_for('admin_ingredients') }}'"
+        >
+          <div
+            class="num"
+            style="color:{% if no_ingredients_count > 0 %}#f59e0b{% else %}#22c55e{% endif %}"
+          >
+            {{ no_ingredients_count }}
+          </div>
+          <div class="lbl">🧂 Missing Ingredients</div>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('pending', this)">
+          ⏳ Pending Review {% if stats.pending > 0 %}
+          <span
+            style="
+              background: var(--accent);
+              color: #fff;
+              border-radius: 20px;
+              padding: 1px 7px;
+              font-size: 0.72rem;
+              margin-left: 4px;
+            "
+            >{{ stats.pending }}</span
+          >
+          {% endif %}
+        </button>
+        <button class="tab-btn" onclick="switchTab('history', this)">
+          📜 Review History
+        </button>
+      </div>
+
+      <!-- Pending tab -->
+      <div id="tab-pending" class="tab-panel active">
+        {% if pending_recipes %}
+        <div style="overflow-x: auto">
+          <table class="review-table">
+            <thead>
+              <tr>
+                <th>Recipe</th>
+                <th>Submitted by</th>
+                <th>Details</th>
+                <th>Submitted</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in pending_recipes %}
+              <tr>
+                <td>
+                  <div class="recipe-preview">
+                    <div class="thumb">
+                      {% if r.image_path %}
+                      <img
+                        src="{{ url_for('static', filename=r.image_path) }}"
+                        alt=""
+                      />
+                      {% else %} {{ r.emoji }} {% endif %}
+                    </div>
+                    <div>
+                      <div class="name">{{ r.name }}</div>
+                      <div class="sub">
+                        {{ r.description[:60] }}{% if r.description|length > 60
+                        %}…{% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <a
+                    href="{{ url_for('user_profile', username=r.username) }}"
+                    style="color: var(--accent)"
+                    >{{ r.username }}</a
+                  >
+                </td>
+                <td>
+                  <span style="font-size: 0.83rem; color: var(--text3)">
+                    ⏱ {{ r.cook_time }} &nbsp;·&nbsp; 👥 {{ r.servings }}
+                    &nbsp;·&nbsp; ₱{{ '{:,}'.format(r.total_cost|int) }}
+                  </span>
+                  <div style="margin-top: 4px">
+                    {% if r.is_spicy %}<span class="badge badge-spicy">🌶️</span
+                    >{% endif %} {% if r.is_quick %}<span
+                      class="badge badge-quick"
+                      >⚡</span
+                    >{% endif %} {% if r.is_budget %}<span
+                      class="badge badge-budget"
+                      >💰</span
+                    >{% endif %}
+                  </div>
+                </td>
+                <td style="font-size: 0.82rem; color: var(--text3)">
+                  {{ r.created_at.strftime('%b %d, %Y') }}
+                </td>
+                <td>
+                  <div class="action-row">
+                    <form
+                      method="POST"
+                      action="{{ url_for('admin_approve', recipe_id=r.id) }}"
+                    >
+                      <button type="submit" class="btn-approve">
+                        ✅ Approve
+                      </button>
+                    </form>
+                    <button
+                      class="btn-reject-open"
+                      onclick="openReject({{ r.id }}, '{{ r.name|e }}')"
+                    >
+                      ❌ Reject
+                    </button>
+                    <a
+                      href="{{ url_for('edit_recipe', recipe_id=r.id) }}"
+                      class="action-btn action-edit"
+                      style="font-size: 0.82rem; padding: 6px 12px"
+                      >✏️ Edit</a
+                    >
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-admin">
+          <div class="icon">🎉</div>
+          <p>No recipes pending review. You're all caught up!</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- History tab -->
+      <div id="tab-history" class="tab-panel">
+        {% if recent_recipes %}
+        <div style="overflow-x: auto">
+          <table class="review-table">
+            <thead>
+              <tr>
+                <th>Recipe</th>
+                <th>Submitted by</th>
+                <th>Status</th>
+                <th>Reviewed</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in recent_recipes %}
+              <tr>
+                <td>
+                  <div class="recipe-preview">
+                    <div class="thumb">
+                      {% if r.image_path %}<img
+                        src="{{ url_for('static', filename=r.image_path) }}"
+                        alt=""
+                      />
+                      {% else %}{{ r.emoji }}{% endif %}
+                    </div>
+                    <div>
+                      <div class="name">{{ r.name }}</div>
+                      {% if r.admin_note %}
+                      <div class="sub" style="color: #ef4444">
+                        Note: {{ r.admin_note[:60] }}
+                      </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <a
+                    href="{{ url_for('user_profile', username=r.username) }}"
+                    style="color: var(--accent)"
+                    >{{ r.username }}</a
+                  >
+                </td>
+                <td>
+                  <span class="status-pill pill-{{ r.status }}"
+                    >{{ r.status.upper() }}</span
+                  >
+                </td>
+                <td style="font-size: 0.82rem; color: var(--text3)">
+                  {{ r.reviewed_at.strftime('%b %d, %Y') if r.reviewed_at else
+                  '—' }}
+                </td>
+                <td>
+                  <div class="action-row">
+                    {% if r.status == 'approved' %}
+                    <form
+                      method="POST"
+                      action="{{ url_for('admin_unpublish', recipe_id=r.id) }}"
+                    >
+                      <button type="submit" class="btn-unpublish">
+                        ⏸ Unpublish
+                      </button>
+                    </form>
+                    {% elif r.status == 'rejected' %}
+                    <form
+                      method="POST"
+                      action="{{ url_for('admin_approve', recipe_id=r.id) }}"
+                    >
+                      <button type="submit" class="btn-approve">
+                        ✅ Re-approve
+                      </button>
+                    </form>
+                    {% endif %}
+                    <form
+                      method="POST"
+                      action="{{ url_for('delete_recipe', recipe_id=r.id) }}"
+                      onsubmit="
+                        return confirm('Delete this recipe permanently?');
+                      "
+                      style="display: inline"
+                    >
+                      <button
+                        type="submit"
+                        class="action-btn action-delete"
+                        style="font-size: 0.82rem; padding: 6px 12px"
+                      >
+                        🗑
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="empty-admin">
+          <div class="icon">📜</div>
+          <p>No review history yet.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Reject modal -->
+    <div class="reject-modal-bg" id="rejectModalBg">
+      <div class="reject-modal">
+        <h3>❌ Reject Recipe</h3>
+        <p
+          id="rejectRecipeName"
+          style="font-weight: 600; color: var(--text1); margin-bottom: 12px"
+        ></p>
+        <p>
+          Optionally add a note to let the creator know why it was rejected:
+        </p>
+        <form method="POST" id="rejectForm">
+          <textarea
+            name="note"
+            placeholder="e.g. Missing step details, unclear ingredients..."
+          ></textarea>
+          <div class="reject-modal-btns">
+            <button
+              type="submit"
+              class="btn-primary"
+              style="background: #ef4444"
+            >
+              Reject Recipe
+            </button>
+            <button type="button" class="btn-secondary" onclick="closeReject()">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>

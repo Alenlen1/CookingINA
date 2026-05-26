@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en" id="htmlRoot">
+  <!-- ============================================================
+     Cooking INA — Flask/Jinja2 Version
+     Preserves all original UI, adds auth + backend features
+     ============================================================ -->
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400;1,9..144,700&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/chatbot.css') }}"
+    />
+  </head>
+  {% include 'chatbot_widget.html' %}
+  <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+  <body id="bodyRoot">
+    <!-- ============================================================
+       HEADER
+       ============================================================ -->
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+
+        <form
+          class="search-bar"
+          method="GET"
+          action="{{ url_for('index') }}"
+          id="searchForm"
+        >
+          <input
+            type="hidden"
+            name="filter"
+            id="hiddenFilter"
+            value="{{ active_filter }}"
+          />
+          <input
+            type="text"
+            name="q"
+            id="searchInput"
+            placeholder="Search ingredients or recipes..."
+            value="{{ search }}"
+            autocomplete="off"
+          />
+          <button type="submit" class="search-btn">Search</button>
+        </form>
+
+        <button
+          class="mic-btn"
+          id="micBtn"
+          onclick="toggleVoice()"
+          title="Voice search"
+        >
+          🎤
+        </button>
+        <button
+          class="theme-btn"
+          id="themeBtn"
+          onclick="toggleTheme()"
+          title="Toggle theme"
+        >
+          🌙
+        </button>
+
+        <!-- Auth nav -->
+        {% if user %}
+        <div class="nav-user">
+          <a href="{{ url_for('my_recipes') }}" class="nav-link">
+            My Recipes
+          </a>
+
+          {% if user_is_admin %}
+          <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
+            Admin Dashboard
+          </a>
+          {% endif %}
+
+          <a
+            href="{{ url_for('user_profile', username=user.username) }}"
+            class="nav-avatar"
+            title="{{ user.username }}"
+          >
+            {% if user.profile_image %}
+            <img
+              src="{{ url_for('static', filename=user.profile_image) }}"
+              alt="{{ user.username }}"
+            />
+            {% else %} 👤 {% endif %}
+          </a>
+
+          <a href="{{ url_for('logout') }}" class="nav-link"> Logout </a>
+        </div>
+        {% else %}
+        <div class="nav-user">
+          <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+          <a href="{{ url_for('register') }}" class="nav-link nav-link-accent">
+            Register
+          </a>
+        </div>
+        {% endif %}
+      </div>
+    </header>
+
+    <!-- ============================================================
+       FLASH MESSAGES
+       ============================================================ -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for
+    category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <!-- ============================================================
+       HERO
+       ============================================================ -->
+    <div class="hero">
+      <h1>Ma, ano <em>ulam?</em></h1>
+      <p>
+        Discover Filipino recipes with ingredients, costs, allergen alerts, and
+        hands-free cooking — all in one place.
+      </p>
+      {% if user %}
+      <a href="{{ url_for('add_recipe') }}" class="hero-cta"
+        >+ Add Your Recipe</a
+      >
+      {% endif %}
+    </div>
+
+    <!-- ============================================================
+       FILTERS
+       ============================================================ -->
+    <div class="filters">
+      <button
+        class="filter-btn {% if active_filter == 'all' %}active{% endif %}"
+        onclick="setFilter('all', this)"
+      >
+        🍽 All
+      </button>
+      <button
+        class="filter-btn {% if active_filter == 'spicy' %}active{% endif %}"
+        onclick="setFilter('spicy', this)"
+      >
+        🌶️ Spicy
+      </button>
+      <button
+        class="filter-btn {% if active_filter == 'quick' %}active{% endif %}"
+        onclick="setFilter('quick', this)"
+      >
+        ⚡ Quick
+      </button>
+      <button
+        class="filter-btn {% if active_filter == 'budget' %}active{% endif %}"
+        onclick="setFilter('budget', this)"
+      >
+        💰 Budget
+      </button>
+      <button
+        class="filter-btn {% if active_filter == 'favorites' %}active{% endif %}"
+        onclick="setFilter('favorites', this)"
+      >
+        ❤️ Favorites
+      </button>
+    </div>
+
+    <!-- ============================================================
+       MAIN — Recipe Grid (Jinja2 rendered)
+       ============================================================ -->
+    <div class="main">
+      <div class="section-title" id="sectionTitle">
+        {% if search %} 🔍 Results for "{{ search }}" {% elif active_filter ==
+        'favorites' %} ❤️ Your Favorites {% elif active_filter == 'spicy' %} 🌶️
+        Spicy Recipes {% elif active_filter == 'quick' %} ⚡ Quick Meals {% elif
+        active_filter == 'budget' %} 💰 Budget-Friendly {% else %} ✨ Popular
+        Recipes {% endif %}
+      </div>
+
+      <div class="recipe-grid">
+        {% if recipes %} {% for r in recipes %} {% set is_fav = r.id in fav_ids
+        %}
+        <div class="recipe-card" onclick="openRecipe({{ r.id }})">
+          <div class="card-img">
+            {% if r.image_path %}
+            <img
+              src="{{ url_for('static', filename=r.image_path) }}"
+              alt="{{ r.name }}"
+              onerror="this.parentElement.innerHTML='{{ r.emoji }}'"
+            />
+            {% else %} {{ r.emoji }} {% endif %}
+          </div>
+          <div class="card-body">
+            <div class="card-badges">
+              {% if r.is_spicy %}<span class="badge badge-spicy">🌶️ Spicy</span
+              >{% endif %} {% if r.is_quick %}<span class="badge badge-quick"
+                >⚡ Quick</span
+              >{% endif %} {% if r.is_budget %}<span class="badge badge-budget"
+                >💰 Budget</span
+              >{% endif %}
+            </div>
+            <div class="card-title">{{ r.name }}</div>
+            <div class="card-meta">
+              <span>⏱ {{ r.cook_time }}</span>
+              <span>👥 {{ r.servings }} servings</span>
+              {% if r.avg_rating > 0 %}
+              <span>⭐ {{ r.avg_rating }}</span>
+              {% endif %}
+              <button
+                class="fav-btn {% if is_fav %}active{% endif %}"
+                onclick="event.stopPropagation(); handleFav({{ r.id }}, this)"
+              >
+                {{ '❤️' if is_fav else '🤍' }}
+              </button>
+            </div>
+            <div class="card-cost">
+              ₱{{ '{:,}'.format(r.total_cost | int) }} <span>est. total</span>
+            </div>
+            {% if r.username %}
+            <div class="card-uploader">
+              by
+              <a
+                href="{{ url_for('user_profile', username=r.username) }}"
+                onclick="event.stopPropagation()"
+                >{{ r.username }}</a
+              >
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %} {% else %}
+        <div class="no-results">
+          <div class="icon">🍽️</div>
+          <p>
+            {{ 'No recipes found with "' + search + '"' if search else 'No
+            recipes in this category' }}
+          </p>
+          <small
+            >Try searching for an ingredient like "egg", "chicken", or
+            "garlic"</small
+          >
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ============================================================
+       RECIPE DETAIL MODAL (populated by JS/AJAX)
+       ============================================================ -->
+    <div
+      class="modal-overlay"
+      id="modalOverlay"
+      onclick="if (event.target === this) closeModal();"
+    >
+      <div class="modal" id="modal"></div>
+    </div>
+
+    <!-- ============================================================
+       VOICE SEARCH MODAL
+       ============================================================ -->
+    <div class="voice-modal" id="voiceModal" style="display: none">
+      <div class="voice-box">
+        <div class="voice-wave">🎙️</div>
+        <h3>Listening...</h3>
+        <p id="voiceText">Say an ingredient or recipe name</p>
+        <button class="voice-cancel" onclick="cancelVoice()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Pass auth state to JS -->
+    <script>
+      const LOGGED_IN = {{ 'true' if user else 'false' }};
+      const SESSION_USER_ID = {{ user.id if user else 'null' }};
+    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>

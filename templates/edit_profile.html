@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Profile — Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400;1,9..144,700&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/auth_modals.css') }}"
+    />
+  </head>
+  <body id="bodyRoot">
+    <header>
+      {% with messages = get_flashed_messages(with_categories=true) %} {% for
+      category, msg in messages %}
+      <div class="flash flash-{{ category }}">{{ msg }}</div>
+      {% endfor %} {% endwith %}
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+      </div>
+    </header>
+
+    <div class="main" style="padding-top: 32px; max-width: 560px">
+      <div class="section-title">✏️ Edit Profile</div>
+
+      <form method="POST" enctype="multipart/form-data" class="recipe-form">
+        <div class="form-group">
+          <label>Profile Photo</label>
+          {% if user.profile_image %}
+          <img
+            src="{{ url_for('static', filename=user.profile_image) }}"
+            class="img-preview"
+            id="imgPreview"
+            style="
+              width: 80px;
+              height: 80px;
+              border-radius: 50%;
+              object-fit: cover;
+              margin-bottom: 8px;
+            "
+          />
+          {% else %}
+          <div id="imgPreview" style="font-size: 56px; margin-bottom: 8px">
+            👤
+          </div>
+          {% endif %}
+          <input
+            type="file"
+            name="profile_image"
+            accept=".jpg,.jpeg,.png,.webp"
+            onchange="previewImg(this, 'imgPreview')"
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Bio</label>
+          <textarea
+            name="bio"
+            rows="3"
+            placeholder="Tell other cooks about yourself..."
+          >
+{{ user.bio or '' }}</textarea
+          >
+        </div>
+
+        <div style="display: flex; gap: 12px">
+          <button type="submit" class="btn-primary">Save Changes</button>
+          <a
+            href="{{ url_for('user_profile', username=user.username) }}"
+            class="btn-secondary"
+            >Cancel</a
+          >
+        </div>
+      </form>
+      <div
+        style="
+          margin: 36px 0 28px;
+          border-top: 1px solid var(--border);
+          position: relative;
+        "
+      >
+        <span
+          style="
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg);
+            padding: 0 12px;
+            font-size: 0.78rem;
+            color: var(--text3);
+            white-space: nowrap;
+          "
+          >Security Settings</span
+        >
+      </div>
+
+      <div class="form-section" id="changePwSection">
+        <div class="form-section-title">🔒 Change Password</div>
+        <div
+          id="cpError"
+          class="auth-banner auth-banner-error"
+          style="display: none; margin-bottom: 16px"
+        ></div>
+        <div
+          id="cpSuccess"
+          class="auth-banner auth-banner-success"
+          style="display: none; margin-bottom: 16px"
+        ></div>
+        <div class="form-group">
+          <label>Current Password</label>
+          <div class="pw-wrap">
+            <input
+              type="password"
+              id="cpCurrent"
+              placeholder="Your current password"
+              autocomplete="current-password"
+              oninput="clearBanner('cpError')"
+            />
+            <button
+              type="button"
+              class="pw-toggle"
+              onclick="togglePw('cpCurrent', this)"
+              tabindex="-1"
+            >
+              👁
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <div class="pw-wrap">
+            <input
+              type="password"
+              id="cpNew"
+              placeholder="Min. 8 characters"
+              autocomplete="new-password"
+              oninput="checkPwStrength(this.value)"
+            />
+            <button
+              type="button"
+              class="pw-toggle"
+              onclick="togglePw('cpNew', this)"
+              tabindex="-1"
+            >
+              👁
+            </button>
+          </div>
+          <div class="pw-strength" id="pwStrength" style="display: none">
+            <div class="pw-bar"><div class="pw-fill" id="pwFill"></div></div>
+            <span id="pwLabel"></span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <div class="pw-wrap">
+            <input
+              type="password"
+              id="cpConfirm"
+              placeholder="Repeat new password"
+              autocomplete="new-password"
+            />
+            <button
+              type="button"
+              class="pw-toggle"
+              onclick="togglePw('cpConfirm', this)"
+              tabindex="-1"
+            >
+              👁
+            </button>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn-primary"
+          id="cpBtn"
+          onclick="changePassword()"
+        >
+          <span id="cpBtnText">Update Password</span>
+          <span id="cpBtnSpinner" class="btn-spinner" style="display: none"
+            >⏳</span
+          >
+        </button>
+      </div>
+
+      <div style="height: 48px"></div>
+      <div class="auth-toast" id="authToast"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>

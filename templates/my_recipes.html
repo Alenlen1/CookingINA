@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Recipes — Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400;1,9..144,700&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+    <style>
+      .dash-stats {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 28px;
+      }
+      .dash-stat {
+        background: var(--bg2);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 20px;
+        min-width: 100px;
+        text-align: center;
+        flex: 1;
+      }
+      .dash-stat .num {
+        font-size: 1.7rem;
+        font-weight: 700;
+        font-family: "Fraunces", serif;
+        line-height: 1;
+      }
+      .dash-stat .lbl {
+        font-size: 0.75rem;
+        color: var(--text3);
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .dash-stat.approved .num {
+        color: #22c55e;
+      }
+      .dash-stat.pending .num {
+        color: #f59e0b;
+      }
+      .dash-stat.rejected .num {
+        color: #ef4444;
+      }
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .status-pending {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .status-approved {
+        background: #d1fae5;
+        color: #065f46;
+      }
+      .status-rejected {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      body.dark .status-pending {
+        background: #451a03;
+        color: #fcd34d;
+      }
+      body.dark .status-approved {
+        background: #052e16;
+        color: #4ade80;
+      }
+      body.dark .status-rejected {
+        background: #450a0a;
+        color: #f87171;
+      }
+
+      .admin-note {
+        margin-top: 6px;
+        padding: 7px 10px;
+        background: #fee2e2;
+        border-left: 3px solid #ef4444;
+        border-radius: 0 6px 6px 0;
+        font-size: 0.8rem;
+        color: #991b1b;
+      }
+      body.dark .admin-note {
+        background: #450a0a;
+        color: #fca5a5;
+      }
+
+      .pending-banner {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border: 1px solid #f59e0b;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .pending-banner .icon {
+        font-size: 1.6rem;
+      }
+      .pending-banner p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #78350f;
+      }
+      body.dark .pending-banner {
+        background: #451a03;
+        border-color: #92400e;
+      }
+      body.dark .pending-banner p {
+        color: #fcd34d;
+      }
+    </style>
+  </head>
+  <body id="bodyRoot">
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        <div class="nav-user">
+          <a
+            href="{{ url_for('user_profile', username=user.username) }}"
+            class="nav-avatar"
+          >
+            {% if user.profile_image %}
+            <img
+              src="{{ url_for('static', filename=user.profile_image) }}"
+              alt=""
+            />
+            {% else %}👤{% endif %}
+          </a>
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        </div>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for
+    category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <div class="main" style="padding-top: 32px">
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        "
+      >
+        <div class="section-title" style="margin-bottom: 0">👨‍🍳 My Recipes</div>
+        <a href="{{ url_for('add_recipe') }}" class="btn-primary"
+          >+ Add Recipe</a
+        >
+      </div>
+
+      <!-- Stats -->
+      <div class="dash-stats">
+        <div class="dash-stat">
+          <div class="num">{{ stats.total }}</div>
+          <div class="lbl">📦 Total</div>
+        </div>
+        <div class="dash-stat approved">
+          <div class="num">{{ stats.approved }}</div>
+          <div class="lbl">✅ Approved</div>
+        </div>
+        <div class="dash-stat pending">
+          <div class="num">{{ stats.pending }}</div>
+          <div class="lbl">⏳ Pending</div>
+        </div>
+        <div class="dash-stat rejected">
+          <div class="num">{{ stats.rejected }}</div>
+          <div class="lbl">❌ Rejected</div>
+        </div>
+      </div>
+
+      {% if stats.pending > 0 %}
+      <div class="pending-banner">
+        <div class="icon">⏳</div>
+        <p>
+          You have
+          <strong
+            >{{ stats.pending }} recipe{{ 's' if stats.pending != 1 }}</strong
+          >
+          waiting for admin review. They won't be visible to the public until
+          approved.
+        </p>
+      </div>
+      {% endif %}
+
+      <div class="recipe-grid">
+        {% for r in recipes %} {% set is_fav = r.id in fav_ids %}
+        <div class="recipe-card" onclick="openRecipe({{ r.id }})">
+          <div class="card-img">
+            {% if r.image_path %}
+            <img
+              src="{{ url_for('static', filename=r.image_path) }}"
+              alt="{{ r.name }}"
+              onerror="this.parentElement.innerHTML='{{ r.emoji }}'"
+            />
+            {% else %}{{ r.emoji }}{% endif %}
+          </div>
+          <div class="card-body">
+            <!-- Status badge -->
+            <div style="margin-bottom: 6px">
+              {% if r.status == 'approved' %}
+              <span class="status-badge status-approved">✅ Published</span>
+              {% elif r.status == 'pending' %}
+              <span class="status-badge status-pending">⏳ Pending Review</span>
+              {% else %}
+              <span class="status-badge status-rejected">❌ Rejected</span>
+              {% endif %}
+            </div>
+
+            <div class="card-badges">
+              {% if r.is_spicy %}<span class="badge badge-spicy">🌶️ Spicy</span
+              >{% endif %} {% if r.is_quick %}<span class="badge badge-quick"
+                >⚡ Quick</span
+              >{% endif %} {% if r.is_budget %}<span class="badge badge-budget"
+                >💰 Budget</span
+              >{% endif %}
+            </div>
+            <div class="card-title">{{ r.name }}</div>
+            <div class="card-meta">
+              <span>⏱ {{ r.cook_time }}</span>
+              <span>👥 {{ r.servings }}</span>
+              {% if r.avg_rating > 0 %}<span>⭐ {{ r.avg_rating }}</span>{%
+              endif %}
+              <button
+                class="fav-btn {% if is_fav %}active{% endif %}"
+                onclick="event.stopPropagation(); handleFav({{ r.id }}, this)"
+              >
+                {{ '❤️' if is_fav else '🤍' }}
+              </button>
+            </div>
+            <div class="card-cost">
+              ₱{{ '{:,}'.format(r.total_cost | int) }} <span>est. total</span>
+            </div>
+
+            {% if r.status == 'rejected' and r.admin_note %}
+            <div class="admin-note" onclick="event.stopPropagation()">
+              💬 Admin note: {{ r.admin_note }}
+            </div>
+            {% endif %}
+
+            <!-- Owner actions -->
+            <div class="card-actions" onclick="event.stopPropagation()">
+              <a
+                href="{{ url_for('edit_recipe', recipe_id=r.id) }}"
+                class="action-btn action-edit"
+                >✏️ Edit</a
+              >
+              <form
+                method="POST"
+                action="{{ url_for('delete_recipe', recipe_id=r.id) }}"
+                onsubmit="return confirm('Delete this recipe?');"
+                style="display: inline"
+              >
+                <button type="submit" class="action-btn action-delete">
+                  🗑 Delete
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="no-results">
+          <div class="icon">🍳</div>
+          <p>No recipes yet</p>
+          <small
+            ><a href="{{ url_for('add_recipe') }}"
+              >Add your first recipe →</a
+            ></small
+          >
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div
+      class="modal-overlay"
+      id="modalOverlay"
+      onclick="if (event.target === this) closeModal();"
+    >
+      <div class="modal" id="modal"></div>
+    </div>
+    <div class="voice-modal" id="voiceModal" style="display: none">
+      <div class="voice-box">
+        <div class="voice-wave">🎙️</div>
+        <h3>Listening...</h3>
+        <p id="voiceText">Say a recipe name</p>
+        <button class="voice-cancel" onclick="cancelVoice()">Cancel</button>
+      </div>
+    </div>
+
+    <script>
+      const LOGGED_IN = true;
+      const SESSION_USER_ID = {{ user.id }};
+    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>

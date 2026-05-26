@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Recipe — Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400;1,9..144,700&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+  </head>
+  <body id="bodyRoot">
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        <div class="nav-user">
+          <a href="{{ url_for('my_recipes') }}" class="nav-link">My Recipes</a>
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        </div>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for
+    category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <div class="main" style="padding-top: 32px; max-width: 700px">
+      <div class="section-title">🍳 Add New Recipe</div>
+
+      <form method="POST" enctype="multipart/form-data" class="recipe-form">
+        <!-- Basic Info -->
+        <div class="form-section">
+          <div class="form-section-title">Basic Info</div>
+          <div class="form-row">
+            <div class="form-group" style="flex: 2">
+              <label>Recipe Name *</label>
+              <input
+                type="text"
+                name="name"
+                required
+                placeholder="e.g. Adobo Chicken"
+              />
+            </div>
+            <div class="form-group" style="flex: 0 0 80px">
+              <label>Emoji</label>
+              <input
+                type="text"
+                name="emoji"
+                placeholder="🍗"
+                maxlength="4"
+                value="🍽️"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Description *</label>
+            <textarea
+              name="description"
+              required
+              rows="2"
+              placeholder="Short description of the recipe..."
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Cook Time *</label>
+              <input
+                type="text"
+                name="cook_time"
+                required
+                placeholder="e.g. 30 min"
+              />
+            </div>
+            <div class="form-group">
+              <label>Servings *</label>
+              <input
+                type="number"
+                name="servings"
+                required
+                min="1"
+                max="50"
+                value="4"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Recipe Photo</label>
+            <div class="img-upload-box" id="imgBox">
+              <div id="imgPlaceholder">📷 Click to upload photo</div>
+              <img id="imgPreview" class="img-preview" style="display: none" />
+              <input
+                type="file"
+                name="image"
+                accept=".jpg,.jpeg,.png,.webp"
+                id="imgInput"
+                onchange="previewImg(this, 'imgPreview')"
+                style="
+                  opacity: 0;
+                  position: absolute;
+                  inset: 0;
+                  cursor: pointer;
+                "
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="form-section">
+          <div class="form-section-title">Tags</div>
+          <div class="tag-checks">
+            <label class="tag-check"
+              ><input type="checkbox" name="is_spicy" /> 🌶️ Spicy</label
+            >
+            <label class="tag-check"
+              ><input type="checkbox" name="is_quick" /> ⚡ Quick Meal</label
+            >
+            <label class="tag-check"
+              ><input type="checkbox" name="is_budget" /> 💰
+              Budget-Friendly</label
+            >
+          </div>
+        </div>
+
+        <!-- Allergens -->
+        <div class="form-section">
+          <div class="form-section-title">Allergens</div>
+          <div class="form-group">
+            <label>List allergens (comma-separated)</label>
+            <input
+              type="text"
+              name="allergens"
+              placeholder="e.g. soy, gluten, shellfish"
+            />
+          </div>
+        </div>
+
+        <!-- Ingredients -->
+        <div class="form-section">
+          <div class="form-section-title">Ingredients</div>
+          <div id="ingredientList">
+            <div class="ingredient-row">
+              <input
+                type="text"
+                name="ing_name[]"
+                placeholder="Ingredient name"
+                class="ing-name"
+              />
+              <span class="ing-peso">₱</span>
+              <input
+                type="number"
+                name="ing_price[]"
+                placeholder="Price"
+                class="ing-price"
+                min="0"
+              />
+              <button
+                type="button"
+                class="remove-row-btn"
+                onclick="removeRow(this)"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+          <button type="button" class="add-row-btn" onclick="addIngredient()">
+            + Add Ingredient
+          </button>
+        </div>
+
+        <!-- Steps -->
+        <div class="form-section">
+          <div class="form-section-title">Cooking Steps</div>
+          <ol id="stepList" class="step-input-list">
+            <li class="step-input-row">
+              <textarea
+                name="step[]"
+                rows="2"
+                placeholder="Step 1 instruction..."
+              ></textarea>
+              <button
+                type="button"
+                class="remove-row-btn"
+                onclick="removeRow(this.parentElement)"
+              >
+                ✕
+              </button>
+            </li>
+          </ol>
+          <button type="button" class="add-row-btn" onclick="addStep()">
+            + Add Step
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 8px">
+          <button type="submit" class="btn-primary">Publish Recipe 🚀</button>
+          <a href="{{ url_for('index') }}" class="btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>

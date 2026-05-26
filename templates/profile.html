@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ profile_user.username }} — Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400;1,9..144,700&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+  </head>
+  <body id="bodyRoot">
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        {% if user %}
+        <div class="nav-user">
+          <a href="{{ url_for('my_recipes') }}" class="nav-link">My Recipes</a>
+          <a
+            href="{{ url_for('user_profile', username=user.username) }}"
+            class="nav-avatar"
+          >
+            {% if user.profile_image %}
+            <img
+              src="{{ url_for('static', filename=user.profile_image) }}"
+              alt=""
+            />
+            {% else %}👤{% endif %}
+          </a>
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        </div>
+        {% else %}
+        <div class="nav-user">
+          <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+          <a href="{{ url_for('register') }}" class="nav-link nav-link-accent"
+            >Register</a
+          >
+        </div>
+        {% endif %}
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for
+    category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <div class="main" style="padding-top: 32px">
+      <!-- Profile Header -->
+      <div class="profile-header">
+        <div class="profile-avatar">
+          {% if profile_user.profile_image %}
+          <img
+            src="{{ url_for('static', filename=profile_user.profile_image) }}"
+            alt="{{ profile_user.username }}"
+          />
+          {% else %}
+          <span>👤</span>
+          {% endif %}
+        </div>
+        <div class="profile-info">
+          <div class="profile-name">{{ profile_user.username }}</div>
+          {% if profile_user.bio %}
+          <p class="profile-bio">{{ profile_user.bio }}</p>
+          {% endif %}
+          <div class="profile-stats">
+            <div class="stat">
+              <div class="stat-num">{{ recipes | length }}</div>
+              <div class="stat-label">Recipes</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">
+                {{ overall_avg if overall_avg else '–' }}
+              </div>
+              <div class="stat-label">Avg Rating</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">{{ total_reviews }}</div>
+              <div class="stat-label">Reviews</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">
+                {{ profile_user.created_at.strftime('%b %Y') }}
+              </div>
+              <div class="stat-label">Joined</div>
+            </div>
+          </div>
+          {% if user and user.id == profile_user.id %}
+          <a
+            href="{{ url_for('edit_profile') }}"
+            class="btn-secondary"
+            style="margin-top: 14px; display: inline-block"
+            >Edit Profile</a
+          >
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Recipes by this user -->
+      <div class="section-title" style="margin-top: 40px">
+        🍽 {{ profile_user.username }}'s Recipes
+      </div>
+      <div class="recipe-grid">
+        {% for r in recipes %} {% set is_fav = r.id in fav_ids %}
+        <div class="recipe-card" onclick="openRecipe({{ r.id }})">
+          <div class="card-img">
+            {% if r.image_path %}
+            <img
+              src="{{ url_for('static', filename=r.image_path) }}"
+              alt="{{ r.name }}"
+              onerror="this.parentElement.innerHTML='{{ r.emoji }}'"
+            />
+            {% else %}{{ r.emoji }}{% endif %}
+          </div>
+          <div class="card-body">
+            <div class="card-badges">
+              {% if r.is_spicy %}<span class="badge badge-spicy">🌶️ Spicy</span
+              >{% endif %} {% if r.is_quick %}<span class="badge badge-quick"
+                >⚡ Quick</span
+              >{% endif %} {% if r.is_budget %}<span class="badge badge-budget"
+                >💰 Budget</span
+              >{% endif %}
+            </div>
+            <div class="card-title">{{ r.name }}</div>
+            <div class="card-meta">
+              <span>⏱ {{ r.cook_time }}</span>
+              <span>👥 {{ r.servings }} servings</span>
+              {% if r.avg_rating > 0 %}<span>⭐ {{ r.avg_rating }}</span>{%
+              endif %}
+              <button
+                class="fav-btn {% if is_fav %}active{% endif %}"
+                onclick="event.stopPropagation(); handleFav({{ r.id }}, this)"
+              >
+                {{ '❤️' if is_fav else '🤍' }}
+              </button>
+            </div>
+            <div class="card-cost">
+              ₱{{ '{:,}'.format(r.total_cost | int) }} <span>est. total</span>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="no-results">
+          <div class="icon">🍽️</div>
+          <p>No recipes yet</p>
+          <small>This chef hasn't uploaded any recipes.</small>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div
+      class="modal-overlay"
+      id="modalOverlay"
+      onclick="if (event.target === this) closeModal();"
+    >
+      <div class="modal" id="modal"></div>
+    </div>
+    <div class="voice-modal" id="voiceModal" style="display: none">
+      <div class="voice-box">
+        <div class="voice-wave">🎙️</div>
+        <h3>Listening...</h3>
+        <p id="voiceText">Say an ingredient or recipe name</p>
+        <button class="voice-cancel" onclick="cancelVoice()">Cancel</button>
+      </div>
+    </div>
+
+    <script>
+      const LOGGED_IN = {{ 'true' if user else 'false' }};
+      const SESSION_USER_ID = {{ user.id if user else 'null' }};
+    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>

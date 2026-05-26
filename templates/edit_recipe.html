@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Edit Recipe — Cooking INA</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400;1,9..144,700&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+  </head>
+  <body id="bodyRoot">
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+        <div style="flex: 1"></div>
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+        <div class="nav-user">
+          <a href="{{ url_for('my_recipes') }}" class="nav-link">My Recipes</a>
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+        </div>
+      </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %} {% for
+    category, msg in messages %}
+    <div class="flash flash-{{ category }}">{{ msg }}</div>
+    {% endfor %} {% endwith %}
+
+    <div class="main" style="padding-top: 32px; max-width: 700px">
+      <div class="section-title">✏️ Edit Recipe</div>
+
+      <form method="POST" enctype="multipart/form-data" class="recipe-form">
+        <div class="form-section">
+          <div class="form-section-title">Basic Info</div>
+          <div class="form-row">
+            <div class="form-group" style="flex: 2">
+              <label>Recipe Name *</label>
+              <input
+                type="text"
+                name="name"
+                required
+                value="{{ recipe.name }}"
+              />
+            </div>
+            <div class="form-group" style="flex: 0 0 80px">
+              <label>Emoji</label>
+              <input
+                type="text"
+                name="emoji"
+                maxlength="4"
+                value="{{ recipe.emoji }}"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Description *</label>
+            <textarea name="description" required rows="2">
+{{ recipe.description }}</textarea
+            >
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Cook Time *</label>
+              <input
+                type="text"
+                name="cook_time"
+                required
+                value="{{ recipe.cook_time }}"
+              />
+            </div>
+            <div class="form-group">
+              <label>Servings *</label>
+              <input
+                type="number"
+                name="servings"
+                required
+                min="1"
+                max="50"
+                value="{{ recipe.servings }}"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Recipe Photo</label>
+            {% if recipe.image_path %}
+            <img
+              src="{{ url_for('static', filename=recipe.image_path) }}"
+              id="imgPreview"
+              class="img-preview"
+              style="margin-bottom: 8px"
+            />
+            {% else %}
+            <img id="imgPreview" class="img-preview" style="display: none" />
+            {% endif %}
+            <div
+              class="img-upload-box"
+              style="
+                position: relative;
+                height: 44px;
+                background: var(--bg2);
+                border-radius: 10px;
+                border: 1.5px dashed var(--border2);
+              "
+            >
+              <span
+                style="
+                  position: absolute;
+                  left: 50%;
+                  top: 50%;
+                  transform: translate(-50%, -50%);
+                  font-size: 13px;
+                  color: var(--text3);
+                "
+                >📷 Replace photo</span
+              >
+              <input
+                type="file"
+                name="image"
+                accept=".jpg,.jpeg,.png,.webp"
+                onchange="previewImg(this, 'imgPreview')"
+                style="
+                  opacity: 0;
+                  position: absolute;
+                  inset: 0;
+                  cursor: pointer;
+                "
+              />
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Tags</div>
+          <div class="tag-checks">
+            <label class="tag-check"
+              ><input
+                type="checkbox"
+                name="is_spicy"
+                {%
+                if
+                recipe.is_spicy
+                %}checked{%
+                endif
+                %}
+              />
+              🌶️ Spicy</label
+            >
+            <label class="tag-check"
+              ><input
+                type="checkbox"
+                name="is_quick"
+                {%
+                if
+                recipe.is_quick
+                %}checked{%
+                endif
+                %}
+              />
+              ⚡ Quick Meal</label
+            >
+            <label class="tag-check"
+              ><input
+                type="checkbox"
+                name="is_budget"
+                {%
+                if
+                recipe.is_budget
+                %}checked{%
+                endif
+                %}
+              />
+              💰 Budget-Friendly</label
+            >
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Allergens</div>
+          <div class="form-group">
+            <label>List allergens (comma-separated)</label>
+            <input
+              type="text"
+              name="allergens"
+              value="{{ recipe.allergens | join(', ') }}"
+              placeholder="e.g. soy, gluten"
+            />
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Ingredients</div>
+          <div id="ingredientList">
+            {% for ing in recipe.ingredients %}
+            <div class="ingredient-row">
+              <input
+                type="text"
+                name="ing_name[]"
+                value="{{ ing.name }}"
+                class="ing-name"
+              />
+              <span class="ing-peso">₱</span>
+              <input
+                type="number"
+                name="ing_price[]"
+                value="{{ ing.price }}"
+                class="ing-price"
+                min="0"
+              />
+              <button
+                type="button"
+                class="remove-row-btn"
+                onclick="removeRow(this)"
+              >
+                ✕
+              </button>
+            </div>
+            {% endfor %}
+          </div>
+          <button type="button" class="add-row-btn" onclick="addIngredient()">
+            + Add Ingredient
+          </button>
+        </div>
+
+        <div class="form-section">
+          <div class="form-section-title">Cooking Steps</div>
+          <ol id="stepList" class="step-input-list">
+            {% for step in recipe.steps %}
+            <li class="step-input-row">
+              <textarea name="step[]" rows="2">{{ step.instruction }}</textarea>
+              <button
+                type="button"
+                class="remove-row-btn"
+                onclick="removeRow(this.parentElement)"
+              >
+                ✕
+              </button>
+            </li>
+            {% endfor %}
+          </ol>
+          <button type="button" class="add-row-btn" onclick="addStep()">
+            + Add Step
+          </button>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top: 8px">
+          <button type="submit" class="btn-primary">Save Changes ✅</button>
+          <a href="{{ url_for('my_recipes') }}" class="btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+  </body>
+</html>

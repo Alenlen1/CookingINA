@@ -1,0 +1,86 @@
+{# ================================================================
+   chatbot_widget.html — Floating chat widget partial
+   ================================================================
+   Include this snippet at the BOTTOM of every page template,
+   right before the closing </body> tag.
+
+   Usage (in any template):
+     {% include 'chatbot_widget.html' %}
+
+   OR call the macro:
+     {% from 'chatbot_widget.html' import chatbot_widget %}
+     {{ chatbot_widget() }}
+   ================================================================ #}
+
+{% if user %}
+<!-- ── Floating chatbot widget ────────────────────────────────── -->
+
+<!-- Toggle button -->
+<button class="chat-widget-btn" id="chatWidgetBtn" onclick="toggleWidget()" title="Chat with INA 🍳">
+  🍳
+  <span class="widget-badge"></span>
+</button>
+
+<!-- Popup -->
+<div class="chat-widget-popup" id="chatWidgetPopup" style="display:none">
+
+  <!-- Header -->
+  <div class="widget-header">
+    <span class="widget-header-icon">🍳</span>
+    <div class="widget-header-text">
+      <div class="name">INA Assistant</div>
+      <div class="sub">Filipino Cooking AI</div>
+    </div>
+    <div class="widget-header-actions">
+      <button class="widget-action-btn" onclick="clearWidgetChat()" title="Clear chat">Clear</button>
+      <a href="{{ url_for('chatbot.chat_page') }}" class="widget-action-btn" title="Open full chat">Full Chat</a>
+      <button class="widget-close-btn" onclick="closeWidget()">✕</button>
+    </div>
+  </div>
+
+  <!-- Messages -->
+  <div class="widget-messages" id="widgetMessages">
+    <!-- Welcome screen -->
+    <div class="widget-welcome" id="widgetWelcome">
+      <div class="ww-icon">🍳</div>
+      <p>Hi! I'm INA, your Filipino cooking assistant. Ask me about recipes, ingredients, or cooking tips!</p>
+      <div class="widget-suggestions">
+        <button class="widget-suggestion" onclick="sendWidgetSuggestion('Suggest a quick Filipino dinner idea')">🇵🇭 Quick Filipino dinner</button>
+        <button class="widget-suggestion" onclick="sendWidgetSuggestion('What can I cook with chicken and coconut milk?')">🍗 Cook with chicken</button>
+        <button class="widget-suggestion" onclick="sendWidgetSuggestion('Budget-friendly Filipino recipes under ₱150')">💰 Budget recipes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Typing indicator -->
+  <div class="widget-typing" id="widgetTyping" style="display:none; padding: 0 12px 8px">
+    <div class="widget-avatar">🍳</div>
+    <div class="widget-typing-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <!-- Input -->
+  <div class="widget-input-row">
+    <textarea
+      class="widget-input"
+      id="widgetInput"
+      placeholder="Ask INA anything..."
+      rows="1"
+      maxlength="500"
+      onkeydown="handleWidgetKey(event)"
+      oninput="autoResize(this)"
+    ></textarea>
+    <button class="widget-send-btn" id="widgetSendBtn" onclick="sendWidgetMessage()" title="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Footer link -->
+  <div class="widget-footer">
+    <a href="{{ url_for('chatbot.chat_page') }}">Open full conversation history →</a>
+  </div>
+
+</div>
+{% endif %}
