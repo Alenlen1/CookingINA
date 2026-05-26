@@ -513,6 +513,35 @@ def react_review(review_id):
 # AUTH
 # ═══════════════════════════════════════════════════════════════════════════
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username'].strip()
+        email    = request.form['email'].strip().lower()
+        password = request.form['password']
+        confirm  = request.form['confirm']
+
+        if len(password) < 8:
+            flash('Password must be at least 8 characters.', 'error')
+            return redirect(url_for('register'))
+        if password != confirm:
+            flash('Passwords do not match.', 'error')
+            return redirect(url_for('register'))
+        if query('SELECT id FROM users WHERE username=%s OR email=%s',
+                 (username, email), one=True):
+            flash('Username or email already taken.', 'error')
+            return redirect(url_for('register'))
+
+        pw_hash = generate_password_hash(password)
+        row = execute(
+            'INSERT INTO users (username,email,password_hash,role) VALUES (%s,%s,%s,%s) RETURNING id',
+            (username, email, pw_hash, 'user'))
+        session['user_id']  = row['id']
+        session['username'] = username
+        flash('Welcome to ChefAI! 🍽️', 'success')
+        return redirect(url_for('index'))
+
+    return render_template('register.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
