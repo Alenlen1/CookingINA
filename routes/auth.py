@@ -33,7 +33,7 @@ def _db():
 
 
 def _mail():
-    return current_app.extensions.get('mail')
+    return current_app.mail
 
 
 def _code() -> str:
