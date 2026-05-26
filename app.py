@@ -32,6 +32,8 @@ DB_URL = os.environ.get(
     'DATABASE_URL',
     'postgresql://postgres:admin123@localhost:5432/cookingina'
 )
+if DB_URL and DB_URL.startswith("postgres://"):
+    DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
@@ -1332,7 +1334,5 @@ def seed_db():
     print(f'Seeded {len(SAMPLE_RECIPES)} recipes. Admin: chef_admin / demo1234')
 
 
-if __name__ == '__main__':
-    with app.app_context():
-        seed_db()
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
