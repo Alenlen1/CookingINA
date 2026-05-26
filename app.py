@@ -10,20 +10,10 @@ from werkzeug.utils import secure_filename
 from functools import wraps
 from datetime import datetime
 from chatbot import chatbot_bp
-from flask_mail import Mail
 from routes.auth import auth_bp     
 # ── App setup ──────────────────────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'Cooking INA-secret-key-change-in-prod')
-app.config['MAIL_SERVER']   = 'smtp.gmail.com'
-app.config['MAIL_PORT']     = 587
-app.config['MAIL_USE_TLS']  = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_ASCII_ATTACHMENTS'] = False  # ← ADD THIS
-mail = Mail(app)
-app.mail = mail
 app.register_blueprint(auth_bp)
 app.register_blueprint(chatbot_bp)
 

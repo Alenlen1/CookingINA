@@ -14,6 +14,7 @@ Integration (add to app.py):
 Then remove / comment out the old @app.route('/register') in app.py.
 """
 import os
+import resend
 import random
 import string
 from datetime import datetime, timedelta
@@ -24,17 +25,13 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Blueprint
 auth_bp = Blueprint('auth', __name__)
 
+resend.api_key = os.environ.get("RESEND_API_KEY")
 
 # ── Internal helpers ─────────────────────────────────────────────────────────
 
 def _db():
     from app import query, execute
     return query, execute
-
-
-def _mail():
-    return current_app.mail
-
 
 def _code() -> str:
     """Cryptographically-safe 6-digit numeric OTP."""
@@ -445,81 +442,185 @@ def _valid_email(email: str) -> bool:
 
 
 def _send_otp_email(email: str, username: str, code: str, mode: str):
-    from flask_mail import Message
-    mail = _mail()
-    print("MAIL USER:", os.environ.get("MAIL_USERNAME"))
-    print("MAIL PASS LEN:", len(os.environ.get("MAIL_PASSWORD") or ""))
-    if not mail:
-        return False, 'Mail not configured.'
-
-    if mode == 'verify':
-        subject     = 'Your Cooking INA Verification Code'
-        headline    = 'Email Verification'
-        body_txt    = (f'Hi {username}! Thanks for joining Cooking INA. '
-                       f'Your verification code is: {code}. Expires in 5 minutes.')
-        intro       = (f'Thanks for joining Cooking INA, <strong>{username}</strong>! '
-                       f'Enter the code below to activate your account.')
-        footer_note = 'If you did not create an account, you can safely ignore this email.'
-    else:
-        subject     = 'Cooking INA Password Reset Code'
-        headline    = 'Password Reset'
-        body_txt    = (f'Hi {username}! Your Cooking INA password reset code is: {code}. '
-                       f'Expires in 5 minutes. If you did not request this, ignore this email.')
-        intro       = (f'Hi <strong>{username}</strong>! Enter the code below to reset '
-                       f'your Cooking INA password.')
-        footer_note = 'If you did not request a password reset, you can safely ignore this email.'
-
-    html = f"""<!DOCTYPE html>
-<html><head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:0;background:#fdfaf5;font-family:Arial,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="background:#fdfaf5;padding:40px 0;">
-<tr><td align="center">
-<table width="520" cellpadding="0" cellspacing="0"
-       style="background:#fff;border-radius:20px;overflow:hidden;max-width:100%;">
-  <tr>
-    <td style="background:linear-gradient(135deg,#c8501a,#e8803a);padding:32px 40px;text-align:center;">
-      <h1 style="margin:0;color:#fff;font-size:1.5rem;font-weight:700;">Cooking INA</h1>
-      <p style="margin:6px 0 0;color:rgba(255,255,255,.85);font-size:.88rem;">{headline}</p>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding:36px 40px 28px;">
-      <p style="margin:0 0 20px;font-size:.95rem;color:#5c4a2a;line-height:1.6;">{intro}</p>
-      <div style="background:#fdfaf5;border:2px dashed #c8501a;border-radius:14px;
-                  padding:28px;text-align:center;margin-bottom:24px;">
-        <p style="margin:0 0 8px;font-size:.75rem;color:#9c8060;
-                   text-transform:uppercase;letter-spacing:.1em;">Your code</p>
-        <div style="font-size:3rem;font-weight:900;letter-spacing:12px;
-                    color:#c8501a;font-family:monospace;">{code}</div>
-        <p style="margin:10px 0 0;font-size:.78rem;color:#9c8060;">Expires in <strong>5 minutes</strong></p>
-      </div>
-      <p style="margin:0;font-size:.83rem;color:#9c8060;line-height:1.6;">{footer_note}</p>
-    </td>
-  </tr>
-  <tr>
-    <td style="background:#f4efe6;padding:18px 40px;text-align:center;border-top:1px solid #ede5d8;">
-      <p style="margin:0;font-size:.75rem;color:#9c8060;">Cooking INA - Filipino Recipe Platform</p>
-    </td>
-  </tr>
-</table>
-</td></tr>
-</table>
-</body></html>"""
-
-    # Strip all non-ASCII characters to prevent encoding errors
-    html     = html.encode('ascii', 'ignore').decode('ascii')
-    body_txt = body_txt.encode('ascii', 'ignore').decode('ascii')
-    subject  = subject.encode('ascii', 'ignore').decode('ascii')
-
     try:
-        msg = Message(
-            subject=subject,
-            recipients=[email],
-            html=html,
-            body=body_txt
-        )
-        mail.send(msg)
+
+        if mode == 'verify':
+            subject = "Your Cooking INA Verification Code"
+            headline = "Email Verification"
+            intro = f"""
+            Thanks for joining Cooking INA, <strong>{username}</strong>!
+            Enter the verification code below to activate your account.
+            """
+            footer = """
+            If you did not create an account, you can safely ignore this email.
+            """
+
+        else:
+            subject = "Cooking INA Password Reset Code"
+            headline = "Password Reset"
+            intro = f"""
+            Hi <strong>{username}</strong>!
+            Use the code below to reset your Cooking INA password.
+            """
+            footer = """
+            If you did not request a password reset, you can safely ignore this email.
+            """
+
+        html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+
+<body style="
+    margin:0;
+    padding:0;
+    background:#fdfaf5;
+    font-family:Arial,sans-serif;
+">
+
+<table width="100%" cellpadding="0" cellspacing="0"
+       style="background:#fdfaf5;padding:40px 0;">
+
+<tr>
+<td align="center">
+
+<table width="520" cellpadding="0" cellspacing="0"
+style="
+    background:#ffffff;
+    border-radius:20px;
+    overflow:hidden;
+    max-width:100%;
+">
+
+<tr>
+<td style="
+    background:linear-gradient(135deg,#c8501a,#e8803a);
+    padding:32px 40px;
+    text-align:center;
+">
+
+<h1 style="
+    margin:0;
+    color:white;
+    font-size:30px;
+    font-weight:700;
+">
+Cooking INA
+</h1>
+
+<p style="
+    margin-top:8px;
+    color:rgba(255,255,255,0.85);
+    font-size:14px;
+">
+{headline}
+</p>
+
+</td>
+</tr>
+
+<tr>
+<td style="padding:36px 40px 28px;">
+
+<p style="
+    margin:0 0 20px;
+    font-size:15px;
+    color:#5c4a2a;
+    line-height:1.7;
+">
+{intro}
+</p>
+
+<div style="
+    background:#fdfaf5;
+    border:2px dashed #c8501a;
+    border-radius:14px;
+    padding:28px;
+    text-align:center;
+    margin-bottom:24px;
+">
+
+<p style="
+    margin:0 0 8px;
+    font-size:12px;
+    color:#9c8060;
+    text-transform:uppercase;
+    letter-spacing:2px;
+">
+Your Code
+</p>
+
+<div style="
+    font-size:48px;
+    font-weight:900;
+    letter-spacing:12px;
+    color:#c8501a;
+    font-family:monospace;
+">
+{code}
+</div>
+
+<p style="
+    margin-top:12px;
+    font-size:13px;
+    color:#9c8060;
+">
+Expires in <strong>5 minutes</strong>
+</p>
+
+</div>
+
+<p style="
+    margin:0;
+    font-size:13px;
+    color:#9c8060;
+    line-height:1.6;
+">
+{footer}
+</p>
+
+</td>
+</tr>
+
+<tr>
+<td style="
+    background:#f4efe6;
+    padding:18px 40px;
+    text-align:center;
+    border-top:1px solid #ede5d8;
+">
+
+<p style="
+    margin:0;
+    font-size:12px;
+    color:#9c8060;
+">
+Cooking INA — Filipino Recipe Platform
+</p>
+
+</td>
+</tr>
+
+</table>
+
+</td>
+</tr>
+</table>
+
+</body>
+</html>
+"""
+
+        resend.Emails.send({
+            "from": "Cooking INA <onboarding@resend.dev>",
+            "to": email,
+            "subject": subject,
+            "html": html
+        })
+
         return True, None
+
     except Exception as e:
-        current_app.logger.error(f'Mail error: {e}')
         return False, str(e)
