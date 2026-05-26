@@ -116,22 +116,22 @@ def register_initiate():
     session.modified = True
     
     #delete pag di gumana
-    print("OTP CODE:", code)
+
+    # ── Send email ────────────────────────────────────────────────────────
+    # ── Send email ────────────────────────────────────────────────────────
+    ok, err = _send_otp_email(email, username, code, 'verify')
+
+    if not ok:
+        return jsonify({
+        'ok': False,
+        'error': f'Could not send email: {err}'
+    }), 500
 
     return jsonify({
     'ok': True,
     'email': email,
-    'message': 'OTP generated (email disabled for testing)'
+    'message': f'Verification code sent to {email}'
 })
-
-    # ── Send email ────────────────────────────────────────────────────────
-    #ok, err = _send_otp_email(email, username, code, 'verify')
-   # if not ok:
-        #return jsonify({'ok': False,
-                        #'error': f'Could not send email: {err}. Check Gmail App Password setup.'}), 500
-
-    return jsonify({'ok': True, 'email': email,
-                    'message': f'Verification code sent to {email}'})
 
 
 @auth_bp.route('/register/verify', methods=['POST'])
