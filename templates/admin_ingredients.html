@@ -94,12 +94,18 @@
                   </div>
                 </div>
               </td>
-              <td style="color: var(--text3); font-size: 0.85rem">
-                <a
-                  href="{{ url_for('user_profile', username=r.username) }}"
-                  style="color: var(--accent)"
-                  >{{ r.username }}</a
-                >
+             <td style="color: var(--text3); font-size: 0.85rem">
+                {% if r.username and r.username != 'Deleted User' %}
+                 <a
+                href="{{ url_for('user_profile', username=r.username) }}"
+               style="color: var(--accent)"
+                  >
+                     {{ r.username }}
+                 </a>
+                {% else %}
+                <span style="color: var(--text3)">Deleted User</span>
+                {% endif %}
+                </td>
               </td>
               <td>
                 <span class="status-pill pill-{{ r.status }}"

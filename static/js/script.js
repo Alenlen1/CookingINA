@@ -68,7 +68,7 @@ async function openRecipe(recipeId) {
       <div style="font-size:48px;margin-bottom:16px">🍳</div>
       <p style="color:var(--text3);font-weight:300">Loading recipe...</p>
     </div>`;
-  overlay.classList.add("show");
+  overlay.classList.add("open");
   document.body.style.overflow = "hidden";
 
   try {
@@ -237,7 +237,7 @@ async function openRecipe(recipeId) {
 function closeModal() {
   stopTTS();
   const overlay = document.getElementById("modalOverlay");
-  if (overlay) overlay.classList.remove("show");
+  if (overlay) overlay.classList.remove("open");
   document.body.style.overflow = "";
 }
 
@@ -246,6 +246,137 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") closeModal();
 });
 
+/* ================================================================
+   Edit Profile
+   ================================================================ */
+
+function initEditProfile() {
+  const fileInput     = document.getElementById('file-input');
+  const avatarPreview = document.getElementById('avatar-preview');
+  const modalBg       = document.getElementById('modal-bg');
+  const modalImg      = document.getElementById('modal-img');
+  const toast         = document.getElementById('toast');
+  if (!fileInput) return; // not on edit profile page
+
+  let pendingURL = null, confirmedURL = null;
+
+  function showToast(msg, dur = 2600) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), dur);
+  }
+
+  function openModal(url) {
+    pendingURL = url;
+    modalImg.src = url;
+    modalBg.classList.add('open');
+  }
+
+  function closeModal() {
+    modalBg.classList.remove('open');
+  }
+
+  function loadFile(file) {
+    if (!file || !file.type.startsWith('image/')) return showToast('Please pick an image file.');
+    if (file.size > 5 * 1024 * 1024) return showToast('File too large (max 5 MB).');
+    if (pendingURL) URL.revokeObjectURL(pendingURL);
+    openModal(URL.createObjectURL(file));
+  }
+
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+  const dropZone = document.getElementById('drop-zone');
+  if (dropZone) {
+    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent)'; });
+    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = ''; });
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.style.borderColor = '';
+      if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+    });
+  }
+
+  const avatarWrap = document.getElementById('avatar-wrap');
+  if (avatarWrap) {
+    avatarWrap.addEventListener('click', () => fileInput.click());
+    avatarWrap.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+  }
+
+  document.getElementById('modal-close')?.addEventListener('click', () => { closeModal(); fileInput.value = ''; });
+  document.getElementById('modal-cancel')?.addEventListener('click', () => { closeModal(); fileInput.value = ''; });
+  modalBg?.addEventListener('click', e => { if (e.target === modalBg) { closeModal(); fileInput.value = ''; } });
+  document.getElementById('modal-save')?.addEventListener('click', () => {
+    if (pendingURL) { confirmedURL = pendingURL; avatarPreview.src = confirmedURL; }
+    closeModal();
+    showToast('✓ Photo selected — hit Save Changes to confirm');
+  });
+
+  // Password toggles
+  document.querySelectorAll('.pw-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const inp  = document.getElementById(btn.dataset.target);
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      btn.querySelector('i').className = show ? 'ti ti-eye-off' : 'ti ti-eye';
+    });
+  });
+
+  // Password strength
+  const pwNew = document.getElementById('cpNew');
+  const bar   = document.getElementById('strength-bar');
+  if (pwNew && bar) {
+    pwNew.addEventListener('input', () => {
+      const v = pwNew.value;
+      let score = 0;
+      if (v.length >= 8)  score++;
+      if (v.length >= 12) score++;
+      if (v.length >= 16) score++;
+      if (v.length >= 20) score++;
+      bar.style.width      = [0, 25, 50, 75, 100][score] + '%';
+      bar.style.background = ['', '#E24B4A', '#EF9F27', '#A3C44A', '#0F6E56'][score];
+    });
+  }
+
+  // Change password
+  document.getElementById('update-pw-btn')?.addEventListener('click', async () => {
+    const cur   = document.getElementById('cpCurrent').value;
+    const nw    = pwNew.value;
+    const cf    = document.getElementById('cpConfirm').value;
+    const errEl = document.getElementById('cpError');
+    const sucEl = document.getElementById('cpSuccess');
+
+    errEl.style.display = 'none';
+    sucEl.style.display = 'none';
+
+    if (!cur || !nw || !cf) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
+    if (nw.length < 8)      { errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = 'block'; return; }
+    if (nw !== cf)          { errEl.textContent = "Passwords don't match."; errEl.style.display = 'block'; return; }
+
+    try {
+      const res  = await fetch('/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current: cur, new: nw })
+      });
+      const data = await res.json();
+      if (data.success) {
+        sucEl.textContent = '✓ Password updated successfully!';
+        sucEl.style.display = 'block';
+        ['cpCurrent', 'cpNew', 'cpConfirm'].forEach(id => document.getElementById(id).value = '');
+        bar.style.width = '0%';
+      } else {
+        errEl.textContent = data.error || 'Something went wrong.';
+        errEl.style.display = 'block';
+      }
+    } catch {
+      errEl.textContent = 'Network error. Please try again.';
+      errEl.style.display = 'block';
+    }
+  });
+}
+
+// Run on page load
+initEditProfile();
 /* ============================================================
    RENDER REVIEW
    ============================================================ */
@@ -299,10 +430,29 @@ function renderReview(rv, sessionUid) {
       <div class="review-content">
         <div class="review-meta">
           <strong>${escHtml(rv.username)}</strong> · ${rv.created_at}
-          ${canDelete ? `<button class="review-delete" onclick="deleteReview(${rv.id})">✕ Delete</button>` : ""}
+          ${
+            canDelete
+              ? `<button class="review-delete" onclick="deleteReview(${rv.id})">✕ Delete</button>
+            <button class="review-delete" onclick="toggleEditBox(${rv.id})" style="color:var(--accent)">✏️ Edit</button>
+`
+              : ""
+          }
         </div>
-        <div class="review-text">${escHtml(rv.comment)}</div>
-        ${imgHtml}
+<div class="reply-box" id="edit-box-${rv.id}" style="display:none">
+  <textarea class="reply-input" id="edit-input-${rv.id}">${escHtml(rv.comment)}</textarea>
+  <div class="reply-actions" style="justify-content:space-between;align-items:center">
+    <label class="review-img-label" style="font-size:0.78rem;padding:5px 10px">
+      📎 Change Photo
+      <input type="file" id="edit-img-${rv.id}" accept=".jpg,.jpeg,.png,.webp" style="display:none"
+             onchange="previewEditImg(${rv.id}, this)">
+    </label>
+    <img id="edit-img-preview-${rv.id}" style="display:none;width:40px;height:40px;object-fit:cover;border-radius:6px;border:1.5px solid var(--border)">
+    <div style="display:flex;gap:8px">
+      <button class="reply-submit-btn" onclick="submitEditReview(${rv.id})">Save</button>
+      <button class="reply-cancel-btn" onclick="toggleEditBox(${rv.id})">Cancel</button>
+    </div>
+  </div>
+</div>       ${imgHtml}
         ${reactHtml}
         <div class="reply-box" id="reply-box-${rv.id}-null" style="display:none">
           <textarea class="reply-input" placeholder="Reply to ${escHtml(rv.username)}..."></textarea>
@@ -317,7 +467,94 @@ function renderReview(rv, sessionUid) {
       </div>
     </div>`;
 }
+function toggleEditBox(reviewId) {
+  const box = document.getElementById(`edit-box-${reviewId}`);
+  if (!box) return;
+  box.style.display = box.style.display === "none" ? "block" : "none";
+  if (box.style.display === "block") {
+    document.getElementById(`edit-input-${reviewId}`).focus();
+  }
+}
 
+async function submitEditReview(reviewId) {
+  const input = document.getElementById(`edit-input-${reviewId}`);
+  const imgInput = document.getElementById(`edit-img-${reviewId}`);
+  const comment = input ? input.value.trim() : "";
+  if (!comment) return;
+
+  try {
+    let res;
+    if (imgInput && imgInput.files && imgInput.files[0]) {
+      // Send as FormData with new image
+      const fd = new FormData();
+      fd.append("comment", comment);
+      fd.append("comment_image", imgInput.files[0]);
+      res = await fetch(`/review/${reviewId}/edit`, {
+        method: "POST",
+        body: fd,
+      });
+    } else {
+      // Send as JSON without image change
+      res = await fetch(`/review/${reviewId}/edit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comment }),
+      });
+    }
+
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+
+    // Update displayed comment text
+    const textEl = document.getElementById(`review-text-${reviewId}`);
+    if (textEl) textEl.textContent = comment;
+
+    // Update displayed image if new one was uploaded
+    if (data.image_path) {
+      const imgWrap = document.querySelector(
+        `#review-${reviewId} .review-img-wrap`,
+      );
+      if (imgWrap) {
+        imgWrap.innerHTML = `<img src="/static/${data.image_path}" class="review-img" 
+                              onclick="this.classList.toggle('expanded')" alt="comment image">`;
+      } else {
+        // No existing image wrap — insert after review-text
+        const textDiv = document.getElementById(`review-text-${reviewId}`);
+        if (textDiv) {
+          textDiv.insertAdjacentHTML(
+            "afterend",
+            `
+            <div class="review-img-wrap">
+              <img src="/static/${data.image_path}" class="review-img"
+                   onclick="this.classList.toggle('expanded')" alt="comment image">
+            </div>`,
+          );
+        }
+      }
+    }
+
+    // Hide edit box
+    const box = document.getElementById(`edit-box-${reviewId}`);
+    if (box) box.style.display = "none";
+
+    showToast("Comment updated! ✅");
+  } catch {
+    showToast("Could not update comment. Try again.");
+  }
+}
+
+function previewEditImg(reviewId, input) {
+  const preview = document.getElementById(`edit-img-preview-${reviewId}`);
+  if (!preview) return;
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      preview.src = e.target.result;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
 /* ============================================================
    RENDER REPLY
    ============================================================ */

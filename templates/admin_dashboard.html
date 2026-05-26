@@ -41,7 +41,6 @@
     {% endfor %} {% endwith %}
 
     <div class="main" style="padding-top: 32px">
-      <!-- Admin header banner -->
       <div
         class="admin-header"
         style="
@@ -59,7 +58,6 @@
         </div>
       </div>
 
-      <!-- Stats row -->
       <div class="stat-grid">
         <div class="stat-card pending">
           <div class="num">{{ stats.pending }}</div>
@@ -96,7 +94,6 @@
         </div>
       </div>
 
-      <!-- Tabs -->
       <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('pending', this)">
           ⏳ Pending Review {% if stats.pending > 0 %}
@@ -118,7 +115,6 @@
         </button>
       </div>
 
-      <!-- Pending tab -->
       <div id="tab-pending" class="tab-panel active">
         {% if pending_recipes %}
         <div style="overflow-x: auto">
@@ -155,11 +151,15 @@
                   </div>
                 </td>
                 <td>
+                  {% if r.username and r.username != 'Deleted User' %}
                   <a
                     href="{{ url_for('user_profile', username=r.username) }}"
                     style="color: var(--accent)"
                     >{{ r.username }}</a
                   >
+                  {% else %}
+                  <span style="color: var(--text3); font-style: italic;">Deleted User</span>
+                  {% endif %}
                 </td>
                 <td>
                   <span style="font-size: 0.83rem; color: var(--text3)">
@@ -217,7 +217,6 @@
         {% endif %}
       </div>
 
-      <!-- History tab -->
       <div id="tab-history" class="tab-panel">
         {% if recent_recipes %}
         <div style="overflow-x: auto">
@@ -254,11 +253,15 @@
                   </div>
                 </td>
                 <td>
+                  {% if r.username and r.username != 'Deleted User' %}
                   <a
                     href="{{ url_for('user_profile', username=r.username) }}"
                     style="color: var(--accent)"
                     >{{ r.username }}</a
                   >
+                  {% else %}
+                  <span style="color: var(--text3); font-style: italic;">Deleted User</span>
+                  {% endif %}
                 </td>
                 <td>
                   <span class="status-pill pill-{{ r.status }}"
@@ -322,7 +325,6 @@
       </div>
     </div>
 
-    <!-- Reject modal -->
     <div class="reject-modal-bg" id="rejectModalBg">
       <div class="reject-modal">
         <h3>❌ Reject Recipe</h3>

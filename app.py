@@ -352,7 +352,46 @@ def rate_recipe(recipe_id):
                 'FROM ratings WHERE recipe_id=%s', (recipe_id,), one=True)
     return jsonify({'avg': float(avg['avg']), 'cnt': avg['cnt']})
 
+@app.route('/review/<int:review_id>/edit', methods=['POST'])
+@login_required
+def edit_review(review_id):
+    # Handle both JSON and multipart
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        comment = request.form.get('comment', '').strip()
+    else:
+        comment = (request.json or {}).get('comment', '').strip()
 
+    if not comment:
+        return jsonify({'error': 'Empty comment'}), 400
+
+    uid = session['user_id']
+
+    review = query(
+        'SELECT id, image_path FROM reviews WHERE id=%s AND user_id=%s',
+        (review_id, uid), one=True
+    )
+    if not review:
+        return jsonify({'error': 'Not found'}), 404
+
+    img_path = review['image_path']  # keep existing image by default
+
+    # Handle new image upload
+    if 'comment_image' in request.files:
+        f = request.files['comment_image']
+        if f and f.filename and allowed_file(f.filename):
+            filename = secure_filename(f'{uid}_rev_{f.filename}')
+            f.save(os.path.join(COMMENT_UPLOAD_FOLDER, filename))
+            img_path = f'uploads/comments/{filename}'
+
+    execute(
+        'UPDATE reviews SET comment=%s, image_path=%s WHERE id=%s',
+        (comment, img_path, review_id)
+    )
+    return jsonify({
+        'status': 'updated',
+        'comment': comment,
+        'image_path': img_path
+    })
 # ── Post Review ─────────────────────────────────────────────────────────────
 
 COMMENT_UPLOAD_FOLDER = os.path.join('static', 'uploads', 'comments')
@@ -389,6 +428,7 @@ def post_review(recipe_id):
     user = current_user()
     return jsonify({
         'id':            row['id'],
+        'user_id':       uid, 
         'username':      user['username'],
         'profile_image': user['profile_image'],
         'comment':       comment,
@@ -810,8 +850,9 @@ def admin_dashboard():
     user_count = query('SELECT COUNT(*) as cnt FROM users WHERE role=%s',
                        ('user',), one=True)
 
+    # 1. FIXED: Added COALESCE to username to fallback if user record is missing
     pending_recipes = query('''
-        SELECT r.*, u.username, u.email,
+        SELECT r.*, COALESCE(u.username, 'Deleted User') AS username, u.email,
                COALESCE(SUM(i.price),0) AS total_cost
         FROM recipes r
         LEFT JOIN users       u ON r.user_id  = u.id
@@ -821,8 +862,9 @@ def admin_dashboard():
         ORDER BY r.created_at ASC
     ''')
 
+    # 2. FIXED: Added COALESCE to username here too
     recent_recipes = query('''
-        SELECT r.*, u.username,
+        SELECT r.*, COALESCE(u.username, 'Deleted User') AS username,
                COALESCE(SUM(i.price),0) AS total_cost
         FROM recipes r
         LEFT JOIN users       u ON r.user_id  = u.id
@@ -838,8 +880,10 @@ def admin_dashboard():
         WHERE NOT EXISTS (SELECT 1 FROM ingredients i WHERE i.recipe_id = r.id)
     ''', one=True)
 
+    # 3. FIXED: Added COALESCE to username to safeguard recipe manager data rows
     all_recipes = query('''
-        SELECT r.id, r.name, r.emoji, r.status, r.is_public, u.username,
+        SELECT r.id, r.name, r.emoji, r.status, r.is_public, 
+               COALESCE(u.username, 'Deleted User') AS username,
                COUNT(i.id) AS ingredient_count,
                COALESCE(SUM(i.price), 0) AS total_cost
         FROM recipes r
@@ -955,9 +999,10 @@ def admin_demote(uid):
 def admin_ingredients():
     """List all recipes with their ingredient counts for the admin panel."""
     recipes = query('''
-        SELECT r.id, r.name, r.emoji, r.status, r.is_public, u.username,
-               COUNT(i.id) AS ingredient_count,
-               COALESCE(SUM(i.price), 0) AS total_cost
+        SELECT r.id, r.name, r.emoji, r.status, r.is_public,
+                COALESCE(u.username, 'Deleted User') AS username,               
+                COUNT(i.id) AS ingredient_count,
+                COALESCE(SUM(i.price), 0) AS total_cost
         FROM recipes r
         LEFT JOIN users       u ON r.user_id  = u.id
         LEFT JOIN ingredients i ON i.recipe_id = r.id
