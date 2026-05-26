@@ -614,7 +614,7 @@ Cooking INA — Filipino Recipe Platform
 """
 
         resend.Emails.send({
-            "from": "Cooking INA <onboarding@resend.dev>",
+            "from": "Cooking INA <noreply@cookingina.online>",
             "to": email,
             "subject": subject,
             "html": html
