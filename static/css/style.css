@@ -470,6 +470,7 @@ header {
   font-size: 56px;
   overflow: hidden;
   position: relative;
+  background: var(--bg2);
 }
 .card-img img {
   width: 100%;
@@ -3095,4 +3096,211 @@ header {
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateX(-50%) translateY(8px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+/* ============================================================
+   MOBILE FIXES — Append to end of style.css
+   ============================================================ */
+
+/* Fix modal — JS uses .show but CSS uses .open */
+.modal-overlay.show {
+  opacity: 1;
+  pointer-events: all;
+}
+.modal-overlay.show .modal {
+  transform: translateY(0) scale(1);
+}
+
+/* ============================================================
+   RESPONSIVE — Mobile Layout
+   ============================================================ */
+
+@media (max-width: 768px) {
+
+  /* Header */
+  header {
+    padding: 0 16px;
+  }
+  .header-inner {
+    height: 56px;
+    gap: 8px;
+  }
+  .logo {
+    font-size: 20px;
+  }
+  .search-bar {
+    flex: 1;
+    padding: 7px 12px;
+    min-width: 0;
+  }
+  .search-bar input {
+    font-size: 13px;
+    min-width: 0;
+  }
+  .search-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+  .mic-btn {
+    display: none; /* hide mic on mobile to save space */
+  }
+  .theme-btn {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .nav-user {
+    gap: 2px;
+  }
+  .nav-link {
+    display: none; /* hide text links on mobile */
+  }
+  .nav-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  /* Show only logout on mobile */
+  .nav-user .nav-link:last-child {
+    display: flex;
+    font-size: 12px;
+    padding: 5px 8px;
+  }
+
+  /* Hero */
+  .hero {
+    padding: 48px 20px 40px;
+  }
+  .hero h1 {
+    font-size: clamp(40px, 12vw, 64px);
+    margin-bottom: 14px;
+  }
+  .hero p {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  .hero-cta {
+    padding: 12px 28px;
+    font-size: 13px;
+  }
+
+  /* Filters — horizontal scroll instead of wrapping */
+  .filters {
+    padding: 14px 16px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+  .filter-btn {
+    padding: 7px 16px;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* Main */
+  .main {
+    padding: 0 16px 48px;
+  }
+  .section-title {
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+
+  /* Recipe grid — single column on mobile */
+  .recipe-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  /* Recipe card */
+  .recipe-card {
+    display: flex;
+    flex-direction: row;
+    border-radius: var(--radius-sm);
+  }
+  .card-img {
+    width: 120px;
+    min-width: 120px;
+    aspect-ratio: unset;
+    height: auto;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    font-size: 36px;
+  }
+  .card-body {
+    padding: 12px 14px;
+    flex: 1;
+    min-width: 0;
+  }
+  .card-title {
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  .card-cost {
+    font-size: 18px;
+  }
+  .card-meta {
+    font-size: 11px;
+    gap: 6px;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .modal {
+    max-width: 100%;
+    width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius) var(--radius) 0 0;
+    transform: translateY(100%);
+  }
+  .modal-overlay.show .modal {
+    transform: translateY(0);
+  }
+  .modal-img {
+    height: 200px;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .modal-body {
+    padding: 20px 20px 32px;
+  }
+  .modal-title {
+    font-size: 24px;
+  }
+  .tts-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tts-btn {
+    font-size: 11px;
+    padding: 8px 16px;
+  }
+  .total-cost .amount {
+    font-size: 22px;
+  }
+
+  /* Auth pages */
+  .auth-card {
+    padding: 32px 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Even smaller phones */
+  .recipe-card {
+    flex-direction: column;
+  }
+  .card-img {
+    width: 100%;
+    min-width: unset;
+    aspect-ratio: 16/9;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  }
 }
