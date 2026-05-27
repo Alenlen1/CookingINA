@@ -1066,7 +1066,7 @@ function openReject(recipeId, recipeName) {
   const nameEl = document.getElementById("rejectRecipeName");
   if (bg) bg.style.display = "flex";
   if (nameEl) nameEl.textContent = recipeName;
-  if (form) form.action = `/admin/reject/${recipeId}`;
+  if (form) form.action = `/admin/recipe/${recipeId}/reject`;
 }
 
 function closeReject() {

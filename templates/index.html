@@ -81,12 +81,15 @@
         <!-- Auth nav -->
         {% if user %}
         <div class="nav-user">
-          <a href="{{ url_for('my_recipes') }}" class="nav-link">
+          <a href="{{ url_for('game') }}" class="nav-link">🎮 <span class="game-text">Mini Game</span></a>
+
+          <a href="{{ url_for('my_recipes') }}" class="nav-link nav-link-desktop">
             My Recipes
           </a>
+          
 
           {% if user_is_admin %}
-          <a href="{{ url_for('admin_dashboard') }}" class="nav-link">
+          <a href="{{ url_for('admin_dashboard') }}" class="nav-link nav-link-desktop">
             Admin Dashboard
           </a>
           {% endif %}
@@ -108,9 +111,7 @@
         </div>
         {% else %}
         <div class="nav-user">
-          <a href="{{ url_for('login') }}" class="nav-link">Login</a>
-          <a href="{{ url_for('register') }}" class="nav-link nav-link-accent">
-            Register
+          <a href="{{ url_for('login') }}" class="nav-link nav-link-accent">Login</a>
           </a>
         </div>
         {% endif %}

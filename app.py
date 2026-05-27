@@ -1292,6 +1292,9 @@ def reply_review(review_id):
         'created_at': 'Just now',
         'user_id': session['user_id']
     })
+@app.route('/game')
+def game():
+    return render_template('game.html')
 
 
 @app.route('/reply/<int:reply_id>/delete', methods=['POST'])

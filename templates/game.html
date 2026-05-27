@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en" id="htmlRoot">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cooking Game — Cooking INA</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400&family=Outfit:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style_additions.css') }}"
+    />
+
+    <!-- NEW -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/game.css') }}"
+    />
+  </head>
+
+  <body id="bodyRoot">
+    <header>
+      <div class="header-inner">
+        <a href="{{ url_for('index') }}" class="logo"
+          >Cooking <span>INA</span></a
+        >
+
+        <div style="flex: 1"></div>
+
+        <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+          🌙
+        </button>
+
+        <div class="nav-user">
+          {% if user %}
+          <a href="{{ url_for('my_recipes') }}" class="nav-link">My Recipes</a>
+
+          <a
+            href="{{ url_for('user_profile', username=user.username) }}"
+            class="nav-avatar"
+            title="{{ user.username }}"
+          >
+            {% if user.profile_image %}
+            <img
+              src="{{ user.profile_image if user.profile_image.startswith('http') else url_for('static', filename=user.profile_image) }}"
+              alt="{{ user.username }}"
+            />
+            {% else %} 👤 {% endif %}
+          </a>
+
+          <a href="{{ url_for('logout') }}" class="nav-link">Logout</a>
+
+          {% else %}
+
+          <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+          <a href="{{ url_for('register') }}" class="nav-link nav-link-accent"
+            >Register</a
+          >
+
+          {% endif %}
+        </div>
+      </div>
+    </header>
+
+    <div class="game-wrap">
+      <div style="text-align: center; margin-bottom: 16px">
+        <a
+          href="{{ url_for('index') }}"
+          style="font-size: 0.85rem; color: var(--text3); text-decoration: none"
+        >
+          ← Back to recipes
+        </a>
+      </div>
+
+      <div class="game-card">
+        <div id="gameScreen"></div>
+      </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+
+    <!-- NEW -->
+    <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+  </body>
+</html>
