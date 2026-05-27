@@ -16,20 +16,8 @@ from routes.auth import auth_bp
 # ── App setup ──────────────────────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev")
-mail = Mail(app)
-# ── Gmail SMTP CONFIG ─────────────────────
-app.config.update(
-    MAIL_SERVER="smtp.gmail.com",
-    MAIL_PORT=465,
-    MAIL_USE_TLS=True,
-    MAIL_USE_SSL=False,
-    MAIL_USERNAME=os.environ.get("MAIL_USERNAME"),
-    MAIL_PASSWORD=os.environ.get("MAIL_PASSWORD"),
-    MAIL_DEFAULT_SENDER=os.environ.get("MAIL_USERNAME"),
-)
-
-mail.init_app(app)
-app.mail = mail 
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['SENDGRID_API_KEY'] = os.environ.get('SENDGRID_API_KEY')
 # IMPORTANT: expose mail to blueprint
 app.register_blueprint(auth_bp)
 app.register_blueprint(chatbot_bp)

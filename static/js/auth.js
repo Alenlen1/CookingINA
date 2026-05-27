@@ -228,6 +228,13 @@ async function initiateRegister() {
       _regEmail = data.email;
       openOtpModal(email);
       startCountdown('otpResendBtn', 'otpCountdown', 30);
+      const subText = document.getElementById('otpSubText');
+  if (subText) {
+    subText.innerHTML = `We sent a 6-digit code to <strong>${email}</strong>
+      <br><small style="color:#9A7E68;font-size:0.78rem;">
+      Can't find it? Check your spam/junk folder.</small>`;
+  }
+
     } else {
       showBanner('regError', data.error || 'Something went wrong.');
       if (data.cooldown) startCountdown('regBtn', '', data.cooldown);
@@ -353,23 +360,34 @@ async function fpSendCode() {
   try {
     const { ok, data } = await apiPost('/forgot-password/send', { email });
 
-    if (data.ok) {
-      _fpEmail = data.email || email;
-      const display = document.getElementById('fpEmailDisplay');
-      if (display) display.textContent = _fpEmail;
-      fpGoStep(2);
-      clearOtpInputs('fp');
-      clearBanner('fp2Error');
-      clearBanner('fp2Success');
-      startCountdown('fpResendBtn', 'fpCountdown', 30);
-      setTimeout(() => {
-        const first = document.querySelector('#fpOtpInputs .otp-digit');
-        if (first) first.focus();
-      }, 300);
-    } else {
-      showBanner('fp1Error', data.error || 'Could not send reset code.');
-      if (data.cooldown) startCountdown('fpSendBtn', '', data.cooldown);
-    }
+   if (data.ok) {
+     _fpEmail = data.email || email;
+     const display = document.getElementById("fpEmailDisplay");
+     if (display) display.textContent = _fpEmail;
+     fpGoStep(2);
+
+     // ← ADD THIS
+     const subText = document
+       .getElementById("fpStep2")
+       ?.querySelector(".otp-sub");
+     if (subText) {
+       subText.innerHTML = `Code sent to <strong>${_fpEmail}</strong>
+      <br><small style="color:#9A7E68;font-size:0.78rem;">
+      Can't find it? Check your spam/junk folder.</small>`;
+     }
+
+     clearOtpInputs("fp");
+     clearBanner("fp2Error");
+     clearBanner("fp2Success");
+     startCountdown("fpResendBtn", "fpCountdown", 30);
+     setTimeout(() => {
+       const first = document.querySelector("#fpOtpInputs .otp-digit");
+       if (first) first.focus();
+     }, 300);
+   } else {
+     showBanner("fp1Error", data.error || "Could not send reset code.");
+     if (data.cooldown) startCountdown("fpSendBtn", "", data.cooldown);
+   }
   } catch (e) {
     showBanner('fp1Error', 'Network error. Please try again.');
   } finally {
