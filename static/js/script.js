@@ -78,12 +78,14 @@ async function openRecipe(recipeId) {
 
     const isFav = r.is_fav;
     const userRating = r.user_rating || 0;
-    const stepsText = r.steps.map((s) => s.instruction).join(". ");
+    const stepsText = r.steps
+      .map((s, idx) => `Step ${idx + 1}: ${s.instruction}`)
+      .join(". ");
     window._stepsText = stepsText;
     const totalCost = r.ingredients.reduce((sum, i) => sum + i.price, 0);
 
     const imgHtml = r.image_path
-      ? `<img src="/static/${r.image_path}" alt="${escHtml(r.name)}" onerror="this.parentElement.innerHTML='${escHtml(r.emoji)}'">`
+      ? `<img src="${r.image_path.startsWith("http") ? r.image_path : "/static/" + r.image_path}" alt="${escHtml(r.name)}" onerror="this.parentElement.innerHTML='${escHtml(r.emoji)}'">`
       : escHtml(r.emoji);
 
     const allergenBadge =
@@ -251,128 +253,172 @@ document.addEventListener("keydown", (e) => {
    ================================================================ */
 
 function initEditProfile() {
-  const fileInput     = document.getElementById('file-input');
-  const avatarPreview = document.getElementById('avatar-preview');
-  const modalBg       = document.getElementById('modal-bg');
-  const modalImg      = document.getElementById('modal-img');
-  const toast         = document.getElementById('toast');
+  const fileInput = document.getElementById("file-input");
+  const avatarPreview = document.getElementById("avatar-preview");
+  const modalBg = document.getElementById("modal-bg");
+  const modalImg = document.getElementById("modal-img");
+  const toast = document.getElementById("toast");
   if (!fileInput) return; // not on edit profile page
 
-  let pendingURL = null, confirmedURL = null;
+  let pendingURL = null,
+    confirmedURL = null;
 
   function showToast(msg, dur = 2600) {
     toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), dur);
+    toast.classList.add("show");
+    setTimeout(() => toast.classList.remove("show"), dur);
   }
 
   function openModal(url) {
     pendingURL = url;
     modalImg.src = url;
-    modalBg.classList.add('open');
+    modalBg.classList.add("open");
   }
 
   function closeModal() {
-    modalBg.classList.remove('open');
+    modalBg.classList.remove("open");
   }
 
   function loadFile(file) {
-    if (!file || !file.type.startsWith('image/')) return showToast('Please pick an image file.');
-    if (file.size > 5 * 1024 * 1024) return showToast('File too large (max 5 MB).');
+    if (!file || !file.type.startsWith("image/"))
+      return showToast("Please pick an image file.");
+    if (file.size > 5 * 1024 * 1024)
+      return showToast("File too large (max 5 MB).");
     if (pendingURL) URL.revokeObjectURL(pendingURL);
     openModal(URL.createObjectURL(file));
   }
 
-  fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+  fileInput.addEventListener("change", () => {
+    if (fileInput.files[0]) loadFile(fileInput.files[0]);
+  });
 
-  const dropZone = document.getElementById('drop-zone');
+  const dropZone = document.getElementById("drop-zone");
   if (dropZone) {
-    dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--accent)'; });
-    dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = ''; });
-    dropZone.addEventListener('drop', e => {
+    dropZone.addEventListener("dragover", (e) => {
       e.preventDefault();
-      dropZone.style.borderColor = '';
+      dropZone.style.borderColor = "var(--accent)";
+    });
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.style.borderColor = "";
+    });
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = "";
       if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
     });
   }
 
-  const avatarWrap = document.getElementById('avatar-wrap');
+  const avatarWrap = document.getElementById("avatar-wrap");
   if (avatarWrap) {
-    avatarWrap.addEventListener('click', () => fileInput.click());
-    avatarWrap.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileInput.click(); });
+    avatarWrap.addEventListener("click", () => fileInput.click());
+    avatarWrap.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") fileInput.click();
+    });
   }
 
-  document.getElementById('modal-close')?.addEventListener('click', () => { closeModal(); fileInput.value = ''; });
-  document.getElementById('modal-cancel')?.addEventListener('click', () => { closeModal(); fileInput.value = ''; });
-  modalBg?.addEventListener('click', e => { if (e.target === modalBg) { closeModal(); fileInput.value = ''; } });
-  document.getElementById('modal-save')?.addEventListener('click', () => {
-    if (pendingURL) { confirmedURL = pendingURL; avatarPreview.src = confirmedURL; }
+  document.getElementById("modal-close")?.addEventListener("click", () => {
     closeModal();
-    showToast('✓ Photo selected — hit Save Changes to confirm');
+    fileInput.value = "";
+  });
+  document.getElementById("modal-cancel")?.addEventListener("click", () => {
+    closeModal();
+    fileInput.value = "";
+  });
+  modalBg?.addEventListener("click", (e) => {
+    if (e.target === modalBg) {
+      closeModal();
+      fileInput.value = "";
+    }
+  });
+  document.getElementById("modal-save")?.addEventListener("click", () => {
+    if (pendingURL) {
+      confirmedURL = pendingURL;
+      avatarPreview.src = confirmedURL;
+    }
+    closeModal();
+    showToast("✓ Photo selected — hit Save Changes to confirm");
   });
 
   // Password toggles
-  document.querySelectorAll('.pw-toggle').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const inp  = document.getElementById(btn.dataset.target);
-      const show = inp.type === 'password';
-      inp.type = show ? 'text' : 'password';
-      btn.querySelector('i').className = show ? 'ti ti-eye-off' : 'ti ti-eye';
+  document.querySelectorAll(".pw-toggle").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const inp = document.getElementById(btn.dataset.target);
+      const show = inp.type === "password";
+      inp.type = show ? "text" : "password";
+      btn.querySelector("i").className = show ? "ti ti-eye-off" : "ti ti-eye";
     });
   });
 
   // Password strength
-  const pwNew = document.getElementById('cpNew');
-  const bar   = document.getElementById('strength-bar');
+  const pwNew = document.getElementById("cpNew");
+  const bar = document.getElementById("strength-bar");
   if (pwNew && bar) {
-    pwNew.addEventListener('input', () => {
+    pwNew.addEventListener("input", () => {
       const v = pwNew.value;
       let score = 0;
-      if (v.length >= 8)  score++;
+      if (v.length >= 8) score++;
       if (v.length >= 12) score++;
       if (v.length >= 16) score++;
       if (v.length >= 20) score++;
-      bar.style.width      = [0, 25, 50, 75, 100][score] + '%';
-      bar.style.background = ['', '#E24B4A', '#EF9F27', '#A3C44A', '#0F6E56'][score];
+      bar.style.width = [0, 25, 50, 75, 100][score] + "%";
+      bar.style.background = ["", "#E24B4A", "#EF9F27", "#A3C44A", "#0F6E56"][
+        score
+      ];
     });
   }
 
   // Change password
-  document.getElementById('update-pw-btn')?.addEventListener('click', async () => {
-    const cur   = document.getElementById('cpCurrent').value;
-    const nw    = pwNew.value;
-    const cf    = document.getElementById('cpConfirm').value;
-    const errEl = document.getElementById('cpError');
-    const sucEl = document.getElementById('cpSuccess');
+  document
+    .getElementById("update-pw-btn")
+    ?.addEventListener("click", async () => {
+      const cur = document.getElementById("cpCurrent").value;
+      const nw = pwNew.value;
+      const cf = document.getElementById("cpConfirm").value;
+      const errEl = document.getElementById("cpError");
+      const sucEl = document.getElementById("cpSuccess");
 
-    errEl.style.display = 'none';
-    sucEl.style.display = 'none';
+      errEl.style.display = "none";
+      sucEl.style.display = "none";
 
-    if (!cur || !nw || !cf) { errEl.textContent = 'Please fill in all fields.'; errEl.style.display = 'block'; return; }
-    if (nw.length < 8)      { errEl.textContent = 'Password must be at least 8 characters.'; errEl.style.display = 'block'; return; }
-    if (nw !== cf)          { errEl.textContent = "Passwords don't match."; errEl.style.display = 'block'; return; }
-
-    try {
-      const res  = await fetch('/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ current: cur, new: nw })
-      });
-      const data = await res.json();
-      if (data.success) {
-        sucEl.textContent = '✓ Password updated successfully!';
-        sucEl.style.display = 'block';
-        ['cpCurrent', 'cpNew', 'cpConfirm'].forEach(id => document.getElementById(id).value = '');
-        bar.style.width = '0%';
-      } else {
-        errEl.textContent = data.error || 'Something went wrong.';
-        errEl.style.display = 'block';
+      if (!cur || !nw || !cf) {
+        errEl.textContent = "Please fill in all fields.";
+        errEl.style.display = "block";
+        return;
       }
-    } catch {
-      errEl.textContent = 'Network error. Please try again.';
-      errEl.style.display = 'block';
-    }
-  });
+      if (nw.length < 8) {
+        errEl.textContent = "Password must be at least 8 characters.";
+        errEl.style.display = "block";
+        return;
+      }
+      if (nw !== cf) {
+        errEl.textContent = "Passwords don't match.";
+        errEl.style.display = "block";
+        return;
+      }
+
+      try {
+        const res = await fetch("/change-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ current: cur, new: nw }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          sucEl.textContent = "✓ Password updated successfully!";
+          sucEl.style.display = "block";
+          ["cpCurrent", "cpNew", "cpConfirm"].forEach(
+            (id) => (document.getElementById(id).value = ""),
+          );
+          bar.style.width = "0%";
+        } else {
+          errEl.textContent = data.error || "Something went wrong.";
+          errEl.style.display = "block";
+        }
+      } catch {
+        errEl.textContent = "Network error. Please try again.";
+        errEl.style.display = "block";
+      }
+    });
 }
 
 // Run on page load
@@ -389,9 +435,9 @@ function renderReview(rv, sessionUid) {
 
   const imgHtml = rv.image_path
     ? `<div class="review-img-wrap">
-         <img src="/static/${rv.image_path}" class="review-img" alt="comment image"
-              onclick="this.classList.toggle('expanded')">
-       </div>`
+       <img src="${rv.image_path.startsWith("http") ? rv.image_path : "/static/" + rv.image_path}"
+            class="review-img" onclick="this.classList.toggle('expanded')" alt="comment image">
+     </div>`
     : "";
 
   const likeCount = rv.like_count || 0;

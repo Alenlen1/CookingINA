@@ -61,7 +61,7 @@
                   <div class="user-avatar-sm">
                     {% if u.profile_image %}
                     <img
-                      src="{{ url_for('static', filename=u.profile_image) }}"
+                      src="{{ u.profile_image if u.profile_image and u.profile_image.startswith('http') else url_for('static', filename=u.profile_image) }}"
                       alt=""
                     />
                     {% else %}👤{% endif %}

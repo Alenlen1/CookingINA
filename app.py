@@ -10,6 +10,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from functools import wraps
 from datetime import datetime
+import cloudinary
+import cloudinary.uploader
 from chatbot import chatbot_bp
 from routes.auth import auth_bp     
 # ── App setup ──────────────────────────────────────────────────────────────
@@ -17,7 +19,29 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev")
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['SENDGRID_API_KEY'] = os.environ.get('SENDGRID_API_KEY')
-# IMPORTANT: expose mail to blueprint
+# Configure Cloudinary
+cloudinary.config(
+    cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    api_key    = os.environ.get('CLOUDINARY_API_KEY'),
+    api_secret = os.environ.get('CLOUDINARY_API_SECRET'),
+    secure     = True
+)
+
+def upload_to_cloudinary(file, folder='cookingina'):
+    """Upload a file to Cloudinary and return the URL."""
+    try:
+        result = cloudinary.uploader.upload(
+            file,
+            folder=folder,
+            allowed_formats=['jpg', 'jpeg', 'png', 'webp']
+        )
+        return result['secure_url']
+    except Exception as e:
+        print(f'Cloudinary upload error: {e}')
+        return None
+
+
+
 app.register_blueprint(auth_bp)
 app.register_blueprint(chatbot_bp)
 
@@ -376,9 +400,9 @@ def edit_review(review_id):
     if 'comment_image' in request.files:
         f = request.files['comment_image']
         if f and f.filename and allowed_file(f.filename):
-            filename = secure_filename(f'{uid}_rev_{f.filename}')
-            f.save(os.path.join(COMMENT_UPLOAD_FOLDER, filename))
-            img_path = f'uploads/comments/{filename}'
+            url = upload_to_cloudinary(f, folder='cookingina/comments')
+            if url:
+                img_path = url
 
     execute(
         'UPDATE reviews SET comment=%s, image_path=%s WHERE id=%s',
@@ -413,9 +437,9 @@ def post_review(recipe_id):
     if 'comment_image' in request.files:
         f = request.files['comment_image']
         if f and f.filename and allowed_file(f.filename):
-            filename = secure_filename(f'{uid}_rev_{f.filename}')
-            f.save(os.path.join(COMMENT_UPLOAD_FOLDER, filename))
-            img_path = f'uploads/comments/{filename}'
+            url = upload_to_cloudinary(f, folder='cookingina/comments')
+            if url:
+                img_path = url
 
     row = execute('''
         INSERT INTO reviews (user_id, recipe_id, comment, image_path)
@@ -637,9 +661,9 @@ def edit_profile():
         if 'profile_image' in request.files:
             f = request.files['profile_image']
             if f and f.filename and allowed_file(f.filename):
-                filename = secure_filename(f'{uid}_profile_{f.filename}')
-                f.save(os.path.join(UPLOAD_FOLDER, filename))
-                img_path = f'uploads/{filename}'
+                url = upload_to_cloudinary(f, folder='cookingina/profiles')
+                if url:
+                    img_path = url
 
         execute('UPDATE users SET bio=%s, profile_image=%s WHERE id=%s',
                 (bio, img_path, uid))
@@ -729,9 +753,9 @@ def add_recipe():
         if 'image' in request.files:
             f = request.files['image']
             if f and f.filename and allowed_file(f.filename):
-                filename = secure_filename(f'{uid}_{f.filename}')
-                f.save(os.path.join(UPLOAD_FOLDER, filename))
-                img_path = f'uploads/{filename}'
+                url = upload_to_cloudinary(f, folder='cookingina/recipes')
+                if url:
+                    img_path = url
 
         # Admins can publish directly; regular users go to pending
         u = current_user()
@@ -786,9 +810,9 @@ def edit_recipe(recipe_id):
         if 'image' in request.files:
             f = request.files['image']
             if f and f.filename and allowed_file(f.filename):
-                filename = secure_filename(f'{u["id"]}_{f.filename}')
-                f.save(os.path.join(UPLOAD_FOLDER, filename))
-                img_path = f'uploads/{filename}'
+                url = upload_to_cloudinary(f, folder='cookingina/recipes')
+                if url:
+                 img_path = url
 
         # Re-editing a recipe resets it to pending (unless admin edits)
         new_status    = recipe['status']

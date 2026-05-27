@@ -45,7 +45,7 @@
           >
             {% if user.profile_image %}
             <img
-              src="{{ url_for('static', filename=user.profile_image) }}"
+              src="{{ user.profile_image if user.profile_image.startswith('http') else url_for('static', filename=user.profile_image) }}"
               alt="{{ user.username }}"
             />
             {% else %}👤{% endif %}
@@ -244,7 +244,7 @@
             <div class="msg-avatar user-avatar">
               {% if user.profile_image %}
               <img
-                src="{{ url_for('static', filename=user.profile_image) }}"
+                src="{{ user.profile_image if user.profile_image.startswith('http') else url_for('static', filename=user.profile_image) }}"
                 alt=""
               />
               {% else %}👤{% endif %}
@@ -323,7 +323,7 @@
     <!-- Pass data to JS -->
     <script>
       const CHAT_ACTIVE_CONV_ID = {{ active_conv_id|tojson }};
-      const CHAT_USER_IMAGE = {{ (url_for('static', filename=user.profile_image) if user.profile_image else '')|tojson }};
+      const CHAT_USER_IMAGE = {{ (user.profile_image if user.profile_image and user.profile_image.startswith('http') else url_for('static', filename=user.profile_image) if user.profile_image else '')|tojson }};
       const LOGGED_IN = true;
       const SESSION_USER_ID = {{ user.id }};
     </script>

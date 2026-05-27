@@ -98,7 +98,7 @@
           >
             {% if user.profile_image %}
             <img
-              src="{{ url_for('static', filename=user.profile_image) }}"
+              src="{{ user.profile_image if user.profile_image.startswith('http') else url_for('static', filename=user.profile_image) }}"
               alt="{{ user.username }}"
             />
             {% else %} 👤 {% endif %}
@@ -196,7 +196,7 @@
           <div class="card-img">
             {% if r.image_path %}
             <img
-              src="{{ url_for('static', filename=r.image_path) }}"
+              src="{{ r.image_path if r.image_path.startswith('http') else url_for('static', filename=r.image_path) }}"
               alt="{{ r.name }}"
               onerror="this.parentElement.innerHTML='{{ r.emoji }}'"
             />

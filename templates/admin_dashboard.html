@@ -136,7 +136,7 @@
                     <div class="thumb">
                       {% if r.image_path %}
                       <img
-                        src="{{ url_for('static', filename=r.image_path) }}"
+                        src="{{ r.image_path if r.image_path and r.image_path.startswith('http') else url_for('static', filename=r.image_path) if r.image_path else '' }}"
                         alt=""
                       />
                       {% else %} {{ r.emoji }} {% endif %}
@@ -158,7 +158,9 @@
                     >{{ r.username }}</a
                   >
                   {% else %}
-                  <span style="color: var(--text3); font-style: italic;">Deleted User</span>
+                  <span style="color: var(--text3); font-style: italic"
+                    >Deleted User</span
+                  >
                   {% endif %}
                 </td>
                 <td>
@@ -237,7 +239,7 @@
                   <div class="recipe-preview">
                     <div class="thumb">
                       {% if r.image_path %}<img
-                        src="{{ url_for('static', filename=r.image_path) }}"
+                        src="{{ r.image_path if r.image_path and r.image_path.startswith('http') else url_for('static', filename=r.image_path) }}"
                         alt=""
                       />
                       {% else %}{{ r.emoji }}{% endif %}
@@ -260,7 +262,9 @@
                     >{{ r.username }}</a
                   >
                   {% else %}
-                  <span style="color: var(--text3); font-style: italic;">Deleted User</span>
+                  <span style="color: var(--text3); font-style: italic"
+                    >Deleted User</span
+                  >
                   {% endif %}
                 </td>
                 <td>

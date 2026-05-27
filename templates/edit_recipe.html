@@ -100,7 +100,7 @@
             <label>Recipe Photo</label>
             {% if recipe.image_path %}
             <img
-              src="{{ url_for('static', filename=recipe.image_path) }}"
+              src="{{ recipe.image_path if recipe.image_path.startswith('http') else url_for('static', filename=recipe.image_path) }}"
               id="imgPreview"
               class="img-preview"
               style="margin-bottom: 8px"
