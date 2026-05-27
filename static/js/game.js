@@ -27,13 +27,13 @@
 
   const ALL_STAGES = [
     { id:'chop',   emoji:'🔪', name:'Chop!',          tip:'Tap each ingredient to chop it!',               secs:12 },
-    { id:'stir',   emoji:'🥄', name:'Stir!',           tip:'Move in circles around the pot!',               secs:14 },
+    { id:'stir',   emoji:'🥄', name:'Stir!',           tip:'Move in circles around the pot!',               secs:23 },
     { id:'fry',    emoji:'🍳', name:'Fry timing!',     tip:'Tap STOP when the bar is in the green zone!',    secs:15 },
     { id:'season', emoji:'🧂', name:'Season!',         tip:'Shake each spice 3× to season!',                secs:12 },
     { id:'catch',  emoji:'🧺', name:'Catch food!',     tip:'Move your mouse/finger to catch falling food!',  secs:14 },
-    { id:'quiz',   emoji:'🧠', name:'Food trivia!',    tip:'Answer the Filipino food question!',             secs:10 },
-    { id:'plate',  emoji:'🍽', name:'Plate it up!',    tip:'Tap the correct ingredients for this recipe!',  secs:12 },
-    { id:'memory', emoji:'🃏', name:'Food memory!',    tip:'Match the pairs before time runs out!',          secs:16 },
+    { id:'quiz',   emoji:'🧠', name:'Food trivia!',    tip:'Answer the Filipino food question!',             secs:12 },
+    { id:'plate',  emoji:'🍽', name:'Plate it up!',    tip:'Tap the correct ingredients for this recipe!',  secs:18 },
+    { id:'memory', emoji:'🃏', name:'Food memory!',    tip:'Match the pairs before time runs out!',          secs:21 },
   ];
 
   /* ── STATE ── */
