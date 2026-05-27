@@ -429,7 +429,7 @@ initEditProfile();
 
 function renderReview(rv, sessionUid) {
   const avatarHtml = rv.profile_image
-    ? `<img src="/static/${rv.profile_image}" alt="">`
+    ? `<img src="${rv.profile_image.startsWith("http") ? rv.profile_image : "/static/" + rv.profile_image}" alt="">`
     : "👤";
   const canDelete = sessionUid && rv.user_id === sessionUid;
 
@@ -498,7 +498,9 @@ function renderReview(rv, sessionUid) {
       <button class="reply-cancel-btn" onclick="toggleEditBox(${rv.id})">Cancel</button>
     </div>
   </div>
-</div>       ${imgHtml}
+</div>     
+        <div class="review-text" id="review-text-${rv.id}">${escHtml(rv.comment)}</div>
+        ${imgHtml}
         ${reactHtml}
         <div class="reply-box" id="reply-box-${rv.id}-null" style="display:none">
           <textarea class="reply-input" placeholder="Reply to ${escHtml(rv.username)}..."></textarea>
@@ -607,7 +609,7 @@ function previewEditImg(reviewId, input) {
 
 function renderReply(reply, reviewId, sessionUid) {
   const avatarHtml = reply.profile_image
-    ? `<img src="/static/${reply.profile_image}" alt="">`
+    ? `<img src="${reply.profile_image.startsWith("http") ? reply.profile_image : "/static/" + reply.profile_image}" alt="">`
     : "👤";
   const canDelete = sessionUid && reply.user_id === sessionUid;
 
