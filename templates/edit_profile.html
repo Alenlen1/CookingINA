@@ -168,9 +168,16 @@
             <i class="ti ti-eye"></i>
           </button>
         </div>
-
-        <button type="button" class="btn-primary" id="update-pw-btn">
-          <i class="ti ti-lock" aria-hidden="true"></i> Update Password
+        <button
+          type="button"
+          class="btn-primary"
+          id="cpBtn"
+          onclick="changePassword()"
+        >
+          <span id="cpBtnText">
+            <i class="ti ti-lock" aria-hidden="true"></i> Update Password
+          </span>
+          <span id="cpBtnSpinner" style="display: none">...</span>
         </button>
       </div>
     </div>
@@ -211,5 +218,6 @@
     <div class="toast" id="toast"></div>
 
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
   </body>
 </html>

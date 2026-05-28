@@ -368,57 +368,7 @@ function initEditProfile() {
   }
 
   // Change password
-  document
-    .getElementById("update-pw-btn")
-    ?.addEventListener("click", async () => {
-      const cur = document.getElementById("cpCurrent").value;
-      const nw = pwNew.value;
-      const cf = document.getElementById("cpConfirm").value;
-      const errEl = document.getElementById("cpError");
-      const sucEl = document.getElementById("cpSuccess");
 
-      errEl.style.display = "none";
-      sucEl.style.display = "none";
-
-      if (!cur || !nw || !cf) {
-        errEl.textContent = "Please fill in all fields.";
-        errEl.style.display = "block";
-        return;
-      }
-      if (nw.length < 8) {
-        errEl.textContent = "Password must be at least 8 characters.";
-        errEl.style.display = "block";
-        return;
-      }
-      if (nw !== cf) {
-        errEl.textContent = "Passwords don't match.";
-        errEl.style.display = "block";
-        return;
-      }
-
-      try {
-        const res = await fetch("/change-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ current: cur, new: nw }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          sucEl.textContent = "✓ Password updated successfully!";
-          sucEl.style.display = "block";
-          ["cpCurrent", "cpNew", "cpConfirm"].forEach(
-            (id) => (document.getElementById(id).value = ""),
-          );
-          bar.style.width = "0%";
-        } else {
-          errEl.textContent = data.error || "Something went wrong.";
-          errEl.style.display = "block";
-        }
-      } catch {
-        errEl.textContent = "Network error. Please try again.";
-        errEl.style.display = "block";
-      }
-    });
 }
 
 // Run on page load
@@ -475,14 +425,15 @@ function renderReview(rv, sessionUid) {
       <div class="review-avatar">${avatarHtml}</div>
       <div class="review-content">
         <div class="review-meta">
-          <strong>${escHtml(rv.username)}</strong> · ${rv.created_at}
-          ${
-            canDelete
-              ? `<button class="review-delete" onclick="deleteReview(${rv.id})">✕ Delete</button>
+<a href="/user/${escHtml(rv.username)}" style="font-weight:600;color:var(--text);text-decoration:none;" 
+   onmouseover="this.style.color='var(--accent)'" 
+   onmouseout="this.style.color='var(--text)'">${escHtml(rv.username)}</a> · ${rv.created_at}          ${
+     canDelete
+       ? `<button class="review-delete" onclick="deleteReview(${rv.id})">✕ Delete</button>
             <button class="review-delete" onclick="toggleEditBox(${rv.id})" style="color:var(--accent)">✏️ Edit</button>
 `
-              : ""
-          }
+       : ""
+   }
         </div>
 <div class="reply-box" id="edit-box-${rv.id}" style="display:none">
   <textarea class="reply-input" id="edit-input-${rv.id}">${escHtml(rv.comment)}</textarea>
@@ -622,13 +573,27 @@ function renderReply(reply, reviewId, sessionUid) {
       <div class="reply-avatar">${avatarHtml}</div>
       <div class="reply-content">
         <div class="review-meta">
-          <strong>${escHtml(reply.username)}</strong> · ${reply.created_at}
-          ${canDelete ? `<button class="review-delete" onclick="deleteReply(${reply.id})">✕ Delete</button>` : ""}
+          <a href="/user/${escHtml(reply.username)}" style="font-weight:600;color:var(--text);text-decoration:none;"
+            onmouseover="this.style.color='var(--accent)'"
+              onmouseout="this.style.color='var(--text)'">${escHtml(reply.username)}</a>          
+              ${
+                canDelete
+                  ? `<button class="review-delete" onclick="deleteReply(${reply.id})">✕ Delete</button>
+              <button class="review-delete" onclick="toggleEditReply(${reply.id})" style="color:var(--accent)">✏️ Edit</button>`
+                  : ""
+              }
         </div>
-        <div class="review-text">${atMention}${escHtml(reply.comment)}</div>
-        ${
-          sessionUid
-            ? `
+          <div class="reply-text" id="reply-text-${reply.id}">${escHtml(reply.comment)}</div>
+            <div class="reply-box" id="reply-edit-box-${reply.id}" style="display:none">
+              <textarea class="reply-input" id="reply-edit-input-${reply.id}">${escHtml(reply.comment)}</textarea>
+                <div class="reply-actions">
+                <button class="reply-submit-btn" onclick="submitEditReply(${reply.id})">Save</button>
+                   <button class="reply-cancel-btn" onclick="toggleEditReply(${reply.id})">Cancel</button>
+               </div>
+            </div>        
+            ${
+    sessionUid
+      ? `
         <div class="review-reactions">
           <button class="reply-btn" onclick="toggleReplyBox(${reviewId}, ${reply.id})">
             💬 Reply
@@ -641,8 +606,8 @@ function renderReply(reply, reviewId, sessionUid) {
             <button class="reply-cancel-btn" onclick="toggleReplyBox(${reviewId}, ${reply.id})">Cancel</button>
           </div>
         </div>`
-            : ""
-        }
+      : ""
+  }
       </div>
     </div>`;
 }
@@ -657,6 +622,41 @@ function toggleReplyBox(reviewId, parentReplyId) {
   box.style.display = box.style.display === "none" ? "block" : "none";
   if (box.style.display === "block") {
     box.querySelector("textarea").focus();
+  }
+}
+function toggleEditReply(replyId) {
+  const box = document.getElementById(`reply-edit-box-${replyId}`);
+  if (!box) return;
+  box.style.display = box.style.display === "none" ? "block" : "none";
+  if (box.style.display === "block") {
+    document.getElementById(`reply-edit-input-${replyId}`).focus();
+  }
+}
+
+async function submitEditReply(replyId) {
+  const input = document.getElementById(`reply-edit-input-${replyId}`);
+  const comment = input ? input.value.trim() : "";
+  if (!comment) return;
+
+  try {
+    const res = await fetch(`/reply/${replyId}/edit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comment }),
+    });
+    if (!res.ok) throw new Error();
+
+    // Update displayed text
+    const textEl = document.getElementById(`reply-text-${replyId}`);
+    if (textEl) textEl.textContent = comment;
+
+    // Hide edit box
+    const box = document.getElementById(`reply-edit-box-${replyId}`);
+    if (box) box.style.display = "none";
+
+    showToast("Reply updated! ✅");
+  } catch {
+    showToast("Could not update reply. Try again.");
   }
 }
 
@@ -1112,7 +1112,7 @@ async function saveIngredient(btn) {
   const price = Number(row.querySelector(".ing-input-price").value) || 0;
 
   try {
-    const res = await fetch(`/admin/ingredient/${id}`, {
+    const res = await fetch(`/admin/ingredients/item/${id}/update`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, price }),

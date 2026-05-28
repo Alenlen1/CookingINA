@@ -413,6 +413,27 @@ def edit_review(review_id):
         'comment': comment,
         'image_path': img_path
     })
+@app.route('/reply/<int:reply_id>/edit', methods=['POST'])
+@login_required
+def edit_reply(reply_id):
+    comment = (request.json or {}).get('comment', '').strip()
+    if not comment:
+        return jsonify({'error': 'Empty comment'}), 400
+
+    uid = session['user_id']
+
+    reply = query(
+        'SELECT id FROM review_replies WHERE id=%s AND user_id=%s',
+        (reply_id, uid), one=True
+    )
+    if not reply:
+        return jsonify({'error': 'Not found'}), 404
+
+    execute(
+        'UPDATE review_replies SET comment=%s WHERE id=%s',
+        (comment, reply_id)
+    )
+    return jsonify({'status': 'updated', 'comment': comment})
 # ── Post Review ─────────────────────────────────────────────────────────────
 
 COMMENT_UPLOAD_FOLDER = os.path.join('static', 'uploads', 'comments')
@@ -848,6 +869,8 @@ def delete_recipe(recipe_id):
         return redirect(url_for('my_recipes'))
     execute('DELETE FROM recipes WHERE id=%s', (recipe_id,))
     flash('Recipe deleted.', 'info')
+    if u['role'] == 'admin':
+        return redirect(url_for('admin_dashboard'))
     return redirect(url_for('my_recipes'))
 
 
