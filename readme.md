@@ -70,7 +70,7 @@ CookingINA/
 │   ├── migrate_chatbot.sql
 │   └── migrate_reactions.sql
 ├── routes/
-│   ├── __init__.py
+│   ├── init.py
 │   └── auth.py                 # OTP registration, forgot password, change password
 ├── templates/                  # Jinja2 HTML templates
 │   ├── index.html
@@ -89,22 +89,20 @@ CookingINA/
 │   ├── admin_users.html
 │   ├── admin_ingredients.html
 │   └── admin_edit_ingredients.html
-├── static/
-│   ├── css/
-│   │   ├── style.css
-│   │   ├── style_additions.css
-│   │   ├── auth_modals.css
-│   │   ├── chatbot.css
-│   │   ├── edit_profile.css
-│   │   └── game.css
-│   └── js/
-│       ├── script.js
-│       ├── auth.js
-│       ├── chatbot.js
-│       └── game.js
-└── docs/
-    ├── AUTH_SETUP.md
-    └── CHATBOT_SETUP.md
+└── static/                     
+├── favicon.ico             # Main browser tab icon 
+├── css/
+│   ├── style.css
+│   ├── style_additions.css
+│   ├── auth_modals.css
+│   ├── chatbot.css
+│   ├── edit_profile.css
+│   └── game.css
+└── js/
+├── script.js
+├── auth.js
+├── chatbot.js
+└── game.js
 ```
 
 ---
