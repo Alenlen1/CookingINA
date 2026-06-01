@@ -10,10 +10,6 @@ __pycache__/
 static/uploads/
 
 
-# Database
-*.db
-*.sqlite3
-
 # Virtual environment
 venv/
 env/
