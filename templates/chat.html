@@ -127,7 +127,7 @@
         <!-- Chat header bar -->
         <div class="chat-topbar">
           <div class="chat-title-area">
-            <span class="chat-ai-icon">🍳</span>
+            <span class="chat-ai-icon"><img src="/static/images/ina-avatar.png" alt="INA"></span>
             <div>
               <div class="chat-ai-name">INA</div>
               <div class="chat-ai-sub">Your Filipino Cooking Assistant</div>
@@ -155,7 +155,7 @@
           {% if not active_conv_id or not messages %}
           <!-- Welcome screen -->
           <div class="chat-welcome" id="chatWelcome">
-            <div class="welcome-icon">🍳</div>
+            <div class="welcome-icon"><img src="/static/images/ina-avatar.png" alt="INA"></div>
             <h2>Kumusta! I'm INA</h2>
             <p>
               Your personal Filipino cooking assistant. Ask me anything about
@@ -228,7 +228,7 @@
             class="msg-row {% if msg.role == 'user' %}msg-user{% else %}msg-ai{% endif %}"
           >
             {% if msg.role == 'assistant' %}
-            <div class="msg-avatar ai-avatar">🍳</div>
+            <div class="msg-avatar ai-avatar"><img src="/static/images/ina-avatar.png" alt="INA"></div>
             {% endif %}
             <div class="msg-bubble">
               <div
@@ -262,7 +262,7 @@
           id="typingIndicator"
           style="display: none"
         >
-          <div class="msg-avatar ai-avatar">🍳</div>
+          <div class="msg-avatar ai-avatar"><img src="/static/images/ina-avatar.png" alt="INA"></div>
           <div class="typing-dots"><span></span><span></span><span></span></div>
         </div>
 

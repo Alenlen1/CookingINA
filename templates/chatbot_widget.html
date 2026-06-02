@@ -16,8 +16,8 @@
 <!-- ── Floating chatbot widget ────────────────────────────────── -->
 
 <!-- Toggle button -->
-<button class="chat-widget-btn" id="chatWidgetBtn" onclick="toggleWidget()" title="Chat with INA 🍳">
-  🍳
+<button class="chat-widget-btn" id="chatWidgetBtn" onclick="toggleWidget()" title="Chat with INA ">
+  <img src="/static/images/ina-avatar.png" alt="INA">
   <span class="widget-badge"></span>
 </button>
 
@@ -26,7 +26,7 @@
 
   <!-- Header -->
   <div class="widget-header">
-    <span class="widget-header-icon">🍳</span>
+    <span class="widget-header-icon"><img src="/static/images/ina-avatar.png" alt="INA"></span>
     <div class="widget-header-text">
       <div class="name">INA Assistant</div>
       <div class="sub">Filipino Cooking AI</div>
@@ -42,7 +42,7 @@
   <div class="widget-messages" id="widgetMessages">
     <!-- Welcome screen -->
     <div class="widget-welcome" id="widgetWelcome">
-      <div class="ww-icon">🍳</div>
+      <div class="ww-icon"><img src="/static/images/ina-avatar.png" alt="INA"></div>
       <p>Hi! I'm INA, your Filipino cooking assistant. Ask me about recipes, ingredients, or cooking tips!</p>
       <div class="widget-suggestions">
         <button class="widget-suggestion" onclick="sendWidgetSuggestion('Suggest a quick Filipino dinner idea')">🇵🇭 Quick Filipino dinner</button>
@@ -54,7 +54,7 @@
 
   <!-- Typing indicator -->
   <div class="widget-typing" id="widgetTyping" style="display:none; padding: 0 12px 8px">
-    <div class="widget-avatar">🍳</div>
+    <div class="widget-avatar"><img src="/static/images/ina-avatar.png" alt="INA"></div>
     <div class="widget-typing-dots"><span></span><span></span><span></span></div>
   </div>
 
