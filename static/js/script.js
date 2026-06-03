@@ -8,7 +8,7 @@
    GLOBAL STATE
    ============================================================ */
 
-let darkMode = localStorage.getItem("chefai_dark") === "1";
+let darkMode = localStorage.getItem("cookingina_dark") === "1";
 let speechSynth = window.speechSynthesis;
 let currentUtterance = null;
 let recognition = null;
@@ -29,7 +29,7 @@ function updateThemeBtn() {
 function toggleTheme() {
   darkMode = !darkMode;
   document.body.classList.toggle("dark", darkMode);
-  localStorage.setItem("chefai_dark", darkMode ? "1" : "0");
+  localStorage.setItem("cookingina_dark", darkMode ? "1" : "0");
   updateThemeBtn();
 }
 
@@ -1179,81 +1179,71 @@ function toggleNavVoice() {
   navRecognition = new SR();
   navRecognition.lang = "en-US";
   navRecognition.continuous = false;
-  navRecognition.interimResults = true;
+  navRecognition.interimResults = false; // ← changed to false
   navRecognition.maxAlternatives = 5;
 
+  navRecognition.onresult = (e) => {
+    const result = e.results[0];
+    let transcript = result[0].transcript;
+    let navRoute = null;
 
- navRecognition.onresult = (e) => {
-   const result = e.results[e.results.length - 1];
-
-   // Try all alternatives, pick the first one that matches a route
-   let transcript = result[0].transcript;
-   let navRoute = null;
-
-   for (let i = 0; i < result.length; i++) {
-     const alt = result[i].transcript;
-     const match = matchNavRoute(alt);
-     if (match) {
-       transcript = alt;
-       navRoute = match;
-       break;
-     }
-   }
-
-   // If no alternative matched, use the top transcript
-   if (!navRoute) transcript = result[0].transcript;
-
-   const navVoiceText = document.getElementById("navVoiceText");
-   if (navVoiceText) navVoiceText.textContent = `"${transcript}"`;
-
-   if (e.results[0].isFinal) {
-     if (!navRoute) navRoute = matchNavRoute(transcript);
-      if (navRoute) {
-        const label = navRoute.label || navRoute.path || navRoute.action;
-        const msg = `Selecting ${label}`;
-        if (navVoiceText) navVoiceText.textContent = msg;
-        if (navRoute.path) highlightNavLink(navRoute.path);
-
-        // Speak the response
-        const utterance = new SpeechSynthesisUtterance(msg);
-        utterance.lang = "en-US";
-        utterance.rate = 1;
-        window.speechSynthesis.speak(utterance);
-
-        setTimeout(() => {
-          cancelNavVoice();
-          if (navRoute.action === "back") {
-            window.history.back();
-          } else if (navRoute.action === "dark") {
-            darkMode = true;
-            document.body.classList.add("dark");
-            localStorage.setItem("chefai_dark", "1");
-            updateThemeBtn();
-          } else if (navRoute.action === "light") {
-            darkMode = false;
-            document.body.classList.remove("dark");
-            localStorage.setItem("chefai_dark", "0");
-            updateThemeBtn();
-          } else {
-            window.location.href = navRoute.path;
-          }
-        }, 500);
-      } else {
-        if (navVoiceText)
-          navVoiceText.textContent = `"${transcript}" — page not found`;
-        setTimeout(() => cancelNavVoice(), 1500);
+    for (let i = 0; i < result.length; i++) {
+      const match = matchNavRoute(result[i].transcript);
+      if (match) {
+        transcript = result[i].transcript;
+        navRoute = match;
+        break;
       }
-   }
- };
+    }
 
-  navRecognition.onerror = () => {
+    if (!navRoute) navRoute = matchNavRoute(transcript);
+
+    const navVoiceText = document.getElementById("navVoiceText");
+
+    if (navRoute) {
+      const label = navRoute.label || navRoute.path || navRoute.action;
+      const msg = `Selecting ${label}`;
+      if (navVoiceText) navVoiceText.textContent = msg;
+      if (navRoute.path) highlightNavLink(navRoute.path);
+
+      const utterance = new SpeechSynthesisUtterance(msg);
+      utterance.lang = "en-US";
+      utterance.rate = 1;
+      utterance.onend = () => {
+        cancelNavVoice();
+        if (navRoute.action === "dark") {
+          darkMode = true;
+          document.body.classList.add("dark");
+          localStorage.setItem("cookingina_dark", "1");
+          updateThemeBtn();
+        } else if (navRoute.action === "light") {
+          darkMode = false;
+          document.body.classList.remove("dark");
+          localStorage.setItem("cookingina_dark", "0");
+          updateThemeBtn();
+        } else {
+          window.location.href = navRoute.path;
+        }
+      };
+      window.speechSynthesis.speak(utterance);
+    } else {
+      if (navVoiceText)
+        navVoiceText.textContent = `"${transcript}" — page not found`;
+      setTimeout(() => cancelNavVoice(), 1500);
+    }
+  };
+
+  navRecognition.onerror = (e) => {
     cancelNavVoice();
     showToast("Voice error. Try again.");
   };
-  navRecognition.onend = () => cancelNavVoice();
+  navRecognition.onend = () => {
+    if (!window.speechSynthesis.speaking) cancelNavVoice();
+  };
   navRecognition.start();
   if (fab) fab.classList.add("nav-listening");
 }
+
 
 function cancelNavVoice() {
   if (navRecognition) {

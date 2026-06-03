@@ -570,7 +570,7 @@ def register():
             (username, email, pw_hash, 'user'))
         session['user_id']  = row['id']
         session['username'] = username
-        flash('Welcome to ChefAI! 🍽️', 'success')
+        flash('Welcome to Cooking INA! 🍽️', 'success')
         return redirect(url_for('index'))
 
     return render_template('register.html')
