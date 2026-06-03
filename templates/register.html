@@ -125,6 +125,18 @@
               </button>
             </div>
           </div>
+          <div class="terms-group">
+            <label class="terms-label">
+              <input type="checkbox" id="termsCheckbox" onchange="clearBanner('regError')" />
+              <span class="terms-label-text">
+                I agree to the
+                <button type="button" class="terms-link" onclick="openTermsModal()">Terms &amp; Conditions</button>
+                and
+                <button type="button" class="terms-link" onclick="openTermsModal('privacy')">Privacy Policy</button>
+              </span>
+            </label>
+          </div>
+
           <button
             type="button"
             class="btn-primary"
@@ -257,8 +269,111 @@
         </button>
       </div>
     </div>
+    <!-- ── Terms & Conditions / Privacy Policy Modal ─────────────── -->
+    <div class="otp-overlay terms-overlay" id="termsOverlay" onclick="closeTermsOnBackdrop(event)">
+      <div class="terms-modal" id="termsModal">
+
+        <div class="terms-header">
+          <span class="terms-header-title">Legal</span>
+          <button class="terms-close-btn" onclick="closeTermsModal()" aria-label="Close">✕</button>
+        </div>
+
+        <div class="terms-tabs" id="termsTabs">
+          <button class="terms-tab active" id="tabTerms" onclick="switchTermsTab('terms')">Terms &amp; Conditions</button>
+          <button class="terms-tab" id="tabPrivacy" onclick="switchTermsTab('privacy')">Privacy Policy</button>
+        </div>
+
+        <div class="terms-body-wrap">
+          <!-- Terms of Service -->
+          <div class="terms-body" id="termsContent">
+            <span class="terms-date">Last updated: June 2026</span>
+
+            <h4>1. Acceptance</h4>
+            <p>By creating a Cooking INA account you agree to these Terms. If you disagree, please do not register.</p>
+
+            <h4>2. Educational Purpose</h4>
+            <p>Cooking INA is an educational project developed for academic purposes and may not provide the same level of reliability, availability, or support as commercial services. Use of the platform is at your own discretion.</p>
+
+            <h4>3. Your Content</h4>
+            <p>You retain ownership of recipes, photos, and reviews you post. By submitting content you grant Cooking INA a non-exclusive licence to display it on the platform. Do not post content you do not own or that is unlawful, offensive, or plagiarised.</p>
+
+            <h4>4. AI Chatbot & Food Safety</h4>
+            <p>The in-app cooking assistant is powered by Google Gemini AI. Responses are for general guidance only and may not always be accurate. Users are responsible for verifying ingredients, cooking instructions, food safety practices, and allergy information before preparing any recipe. Do not rely on AI responses for health, allergy, or dietary decisions.</p>
+
+            <h4>5. Account Rules</h4>
+            <p>You must be at least 13 years old to register. If you are under 18 years old, you should obtain permission from a parent or guardian before using the platform. Keep your password confidential. You are responsible for all activity under your account.</p>
+
+            <h4>6. Account Termination</h4>
+            <p>We reserve the right to suspend, restrict, or permanently terminate accounts that violate these Terms or compromise the security and integrity of the platform. Upon termination, your access to the platform will be revoked and your content may be removed.</p>
+
+            <h4>7. Prohibited Use</h4>
+            <p>Do not use Cooking INA to spam, harass other users, upload malware, or attempt to access another user's account without permission.</p>
+
+            <h4>8. Limitation of Liability</h4>
+            <p>Cooking INA is provided "as is" for educational purposes. We are not liable for any damages arising from use of the platform, including any harm resulting from recipes, AI chatbot responses, or third-party content.</p>
+
+            <h4>9. Changes</h4>
+            <p>We may update these Terms at any time. Continued use of the platform after changes constitutes acceptance.</p>
+          </div>
+
+          <!-- Privacy Policy -->
+          <div class="terms-body" id="privacyContent" style="display:none">
+            <span class="terms-date">Last updated: June 2026</span>
+
+            <h4>1. Data We Collect</h4>
+            <p>When you register we collect your username, email address, and password (stored as a secure hash). If you edit your profile we may also store a bio and profile picture.</p>
+
+            <h4>2. Public Information</h4>
+            <p>Recipes, reviews, usernames, profile pictures, and other content you choose to publish may be visible to other users of the platform. Do not share sensitive personal information in public-facing content.</p>
+
+            <h4>3. How We Use Your Data</h4>
+            <p>Your data is used to operate your account, send OTP verification codes, enable password resets, and display your public profile and recipes to other users.</p>
+
+            <h4>4. Third-Party Services</h4>
+            <p>We use the following third-party services that may process your data:</p>
+            <ul>
+              <li><strong>SendGrid</strong> — sends OTP and password-reset emails.</li>
+              <li><strong>Cloudinary</strong> — stores recipe and profile images you upload.</li>
+              <li><strong>Google Gemini AI</strong> — processes messages you send to the chatbot. Messages sent to the AI chatbot may be used by Google to generate responses. Users should avoid sharing sensitive personal information in chatbot conversations.</li>
+            </ul>
+
+            <h4>5. Data Retention</h4>
+            <p>Your data is retained as long as your account is active. You may request deletion by contacting the site administrator.</p>
+
+            <h4>6. Security</h4>
+            <p>We implement reasonable security measures to protect user information; however, no online service can guarantee absolute security. You are responsible for keeping your account credentials confidential.</p>
+
+            <h4>7. Your Rights under RA 10173</h4>
+            <p>Under the Philippine Data Privacy Act (RA 10173), you may request access to, correction of, deletion of, or information regarding the processing of your personal data, subject to applicable legal requirements. To exercise these rights, contact us using the details below.</p>
+
+            <h4>8. Cookies</h4>
+            <p>We use a single session cookie to keep you logged in. No tracking or advertising cookies are used.</p>
+
+            <h4>9. Contact</h4>
+            <p>For privacy concerns, data requests, or account deletion, contact the site administrator directly:</p>
+            <div class="contact-row">
+              <a class="contact-email-link" href="https://mail.google.com/mail/?view=cm&to=cookingina.noreply@gmail.com&su=Cooking INA - Privacy Inquiry" target="_blank" rel="noopener noreferrer">
+                <span class="contact-email-icon">✉</span>
+                cookingina.noreply@gmail.com
+              </a>
+              <button class="contact-copy-btn" onclick="copyAdminEmail(this)" title="Copy email">
+                <span class="copy-icon">⧉</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="terms-footer">
+          <button class="btn-primary terms-accept-btn" onclick="acceptTerms()">I Agree &amp; Close</button>
+          <button class="terms-decline-btn" onclick="closeTermsModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/terms.js') }}"></script>
+
     {% include 'nav_voice_widget.html' %}
   </body>
 </html>
