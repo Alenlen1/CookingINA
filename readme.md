@@ -1,18 +1,17 @@
 # Cooking INA 
 
-A full-stack Filipino recipe sharing web application built with Python and Flask. CookingINA lets users discover, share, and manage recipes, interact with an AI-powered cooking chatbot, rate and review recipes, play a cooking mini-game, and more — all in one platform.
+A full-stack Filipino recipe-sharing web application built with Python and Flask. CookingINA lets users discover, share, and manage recipes, interact with an AI-powered cooking chatbot, rate and review recipes, play a cooking mini-game, and more — all in one platform.
 
 ---
 
 ## Features
 
 **Recipes**
-- Browse, search, and filter recipes (by name, ingredient, spicy, quick, budget-friendly, and more)
+- Browse, search, and filter recipes (by name, ingredient, spicy, quick, and budget-friendly)
 - Add, edit, and delete your own recipes
 - Upload recipe images via Cloudinary
 - Favorite recipes and manage your personal collection
 - Rate recipes (1–5 stars) and view average ratings
-- Filter homepage by favorites, dietary tags, and more
 
 **Community**
 - Post, edit, and delete reviews on recipes (with optional image uploads)
@@ -168,12 +167,11 @@ SENDGRID_API_KEY=your_sendgrid_api_key
 
 Run the SQL scripts in this order against your PostgreSQL database:
 
-```bash
 psql -U your_user -d cookingina -f database/schema.sql
 psql -U your_user -d cookingina -f database/migrate_v2.sql
 psql -U your_user -d cookingina -f database/migrate_chatbot.sql
 psql -U your_user -d cookingina -f database/migrate_reactions.sql
-```
+
 
 6. **Run the application**
 
@@ -201,7 +199,7 @@ Recipes go through an approval workflow:
 - **Regular users** submit recipes, which start in `pending` status and are hidden from the public until reviewed.
 - **Admins** can approve (publish), reject, or unpublish recipes from the admin dashboard.
 - **Admins** can also add notes when rejecting a recipe.
-- Recipe owners can re-submit a recipe for review after editing it.
+- Recipe owners can resubmit a recipe for review after editing it.
 
 ---
 
