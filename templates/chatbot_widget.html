@@ -1,17 +1,3 @@
-{# ================================================================
-   chatbot_widget.html — Floating chat widget partial
-   ================================================================
-   Include this snippet at the BOTTOM of every page template,
-   right before the closing </body> tag.
-
-   Usage (in any template):
-     {% include 'chatbot_widget.html' %}
-
-   OR call the macro:
-     {% from 'chatbot_widget.html' import chatbot_widget %}
-     {{ chatbot_widget() }}
-   ================================================================ #}
-
 {% if user %}
 <!-- ── Floating chatbot widget ────────────────────────────────── -->
 
@@ -83,4 +69,7 @@
   </div>
 
 </div>
+<script>
+  const CHAT_USER_IMAGE = "{{ user.profile_image or '' }}";
+</script>
 {% endif %}

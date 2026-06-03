@@ -549,7 +549,17 @@ function _appendWidgetMessage(role, content) {
   const row = document.createElement("div");
   row.className = `widget-msg-row ${isUser ? "widget-user" : "widget-ai"}`;
 
-  const avatarHtml = `<div class="widget-avatar">${isUser ? "👤" : "<img src='/static/images/ina-avatar.png' alt='INA'>"}</div>`;
+  const userAvatarSrc =
+    typeof CHAT_USER_IMAGE !== "undefined" && CHAT_USER_IMAGE
+      ? CHAT_USER_IMAGE
+      : null;
+  const avatarHtml = `<div class="widget-avatar">${
+    isUser
+      ? userAvatarSrc
+        ? `<img src="${userAvatarSrc}" alt="You" onerror="this.parentElement.innerHTML='👤'">`
+        : "👤"
+      : "<img src='/static/images/ina-avatar.png' alt='INA'>"
+  }</div>`;
   const bodyHtml = isUser
     ? `<div class="widget-bubble">${_escapeHtml(content)}</div>`
     : `<div class="widget-bubble markdown-content">${renderMarkdown(content)}</div>`;
