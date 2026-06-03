@@ -204,8 +204,3 @@ This app is deployment-ready with Gunicorn. When deploying to platforms like Ren
 ## Contributing
 
 Contributions and suggestions are welcome.
----
-
-## License
-
-This project is for educational purposes.
