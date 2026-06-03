@@ -288,5 +288,6 @@
       const SESSION_USER_ID = {{ user.id if user else 'null' }};
     </script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% include 'nav_voice_widget.html' %}
   </body>
 </html>

@@ -668,6 +668,10 @@ def user_profile(username):
                            overall_avg=float(overall_avg['avg']) if overall_avg['avg'] else 0,
                            is_own_profile=is_own_profile)
 
+@app.route('/profile')
+@login_required
+def profile():
+    return redirect(url_for('user_profile', username=session['username']))
 
 @app.route('/profile/edit', methods=['GET', 'POST'])
 @login_required

@@ -1,0 +1,19 @@
+{# ============================================================
+   nav_voice_widget.html — Floating Voice Navigation Button
+   Include this just before </body> on every page:
+     {% include 'nav_voice_widget.html' %}
+   ============================================================ #}
+
+<!-- Floating Voice Nav Button -->
+<button id="navVoiceFab" onclick="toggleNavVoice()" title="Voice navigation">🎙️</button>
+
+<!-- Voice Nav Modal -->
+<div id="navVoiceModal">
+  <div class="nav-voice-box">
+    <div class="nav-voice-wave">🎙️</div>
+    <h3>Voice Navigation</h3>
+    <p id="navVoiceText">Say a page name to navigate</p>
+    <p class="nav-voice-hint">e.g. "go to login" · "my recipes" · "open game"</p>
+    <button class="nav-voice-cancel" onclick="cancelNavVoice()">Cancel</button>
+  </div>
+</div>

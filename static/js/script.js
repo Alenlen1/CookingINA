@@ -368,7 +368,6 @@ function initEditProfile() {
   }
 
   // Change password
-
 }
 
 // Run on page load
@@ -592,8 +591,8 @@ function renderReply(reply, reviewId, sessionUid) {
                </div>
             </div>        
             ${
-    sessionUid
-      ? `
+              sessionUid
+                ? `
         <div class="review-reactions">
           <button class="reply-btn" onclick="toggleReplyBox(${reviewId}, ${reply.id})">
             💬 Reply
@@ -606,8 +605,8 @@ function renderReply(reply, reviewId, sessionUid) {
             <button class="reply-cancel-btn" onclick="toggleReplyBox(${reviewId}, ${reply.id})">Cancel</button>
           </div>
         </div>`
-      : ""
-  }
+                : ""
+            }
       </div>
     </div>`;
 }
@@ -930,7 +929,7 @@ function stopTTS() {
 }
 
 /* ============================================================
-   VOICE SEARCH (Web Speech API)
+   VOICE SEARCH (Web Speech API) — search bar mic
    ============================================================ */
 
 function toggleVoice() {
@@ -991,6 +990,284 @@ function cancelVoice() {
   if (voiceModal) voiceModal.style.display = "none";
   if (micBtn) micBtn.classList.remove("listening");
   if (voiceText) voiceText.textContent = "Say an ingredient or recipe name";
+}
+
+/* ============================================================
+   VOICE NAVIGATION (Web Speech API) — floating mic
+   ============================================================ */
+
+const VOICE_NAV_ROUTES = [
+  {
+    keywords: ["home", "go home", "main", "main page", "homepage"],
+    path: "/",
+    label: "homepage",
+  },
+  {
+    keywords: [
+      "login",
+      "log in",
+      "sign in",
+      "signin",
+      "go to login",
+      "open login",
+    ],
+    path: "/login",
+    label: "login",
+  },
+  {
+    keywords: [
+      "register",
+      "sign up",
+      "signup",
+      "create account",
+      "go to register",
+      "open register",
+    ],
+    path: "/register",
+    label: "register",
+  },
+  {
+    keywords: ["logout", "log out", "sign out", "signout"],
+    path: "/logout",
+    label: "logging out",
+  },
+  {
+    keywords: [
+      "my recipes",
+      "my recipe",
+      "my cookbook",
+      "open my recipes",
+      "go to my recipes",
+      "recipes",
+      "recipe",
+    ],
+    path: "/my-recipes",
+    label: "my recipes",
+  },
+  {
+    keywords: [
+      "add recipe",
+      "new recipe",
+      "create recipe",
+      "add a recipe",
+      "upload recipe",
+    ],
+    path: "/recipe/add",
+    label: "add recipe",
+  },
+  {
+    keywords: [
+      "game",
+      "mini game",
+      "play game",
+      "play",
+      "open game",
+      "go to game",
+      "gaming",
+    ],
+    path: "/game",
+    label: "mini game",
+  },
+  {
+    keywords: ["admin", "dashboard", "admin dashboard", "go to admin"],
+    path: "/admin",
+    label: "admin dashboard",
+  },
+  {
+    keywords: [
+      "update profile",
+      "change profile",
+      "edit profile",
+      "open profile settings",
+      "go to profile settings",
+    ],
+    path: "/profile/edit",
+    label: "edit profile",
+  },
+  {
+    keywords: ["profile", "my profile", "open profile", "go to profile"],
+    path: "/profile",
+    label: "profile",
+  },
+  {
+    keywords: [
+      "chat",
+      "chatbot",
+      "chat bot",
+      "open chat",
+      "go to chat",
+      "ask chatbot",
+    ],
+    path: "/chat",
+    label: "chatbot",
+  },
+  {
+    keywords: [
+      "users",
+      "user",
+      "admin users",
+      "admin user",
+      "manage users",
+      "go to users",
+    ],
+    path: "/admin/users",
+    label: "admin users",
+  },
+  {
+    keywords: ["ingredients", "admin ingredients", "manage ingredients"],
+    path: "/admin/ingredients",
+    label: "ingredients",
+  },
+  {
+    keywords: ["dark mode", "dark", "night mode", "turn dark"],
+    action: "dark",
+    label: "dark mode",
+  },
+  {
+    keywords: ["light mode", "light", "day mode", "turn light"],
+    action: "light",
+    label: "light mode",
+  },
+];
+
+function matchNavRoute(transcript) {
+  const t = transcript.toLowerCase().trim();
+
+  // Sort all routes by keyword length (longest first) to avoid short keywords
+  // matching before longer more specific ones
+  const allMatches = [];
+  for (const route of VOICE_NAV_ROUTES) {
+    for (const kw of route.keywords) {
+      if (t === kw || t.includes(kw)) {
+        allMatches.push({ route, kw });
+      }
+    }
+  }
+
+  if (allMatches.length === 0) return null;
+
+  // Return the route with the longest matching keyword
+  allMatches.sort((a, b) => b.kw.length - a.kw.length);
+  return allMatches[0].route;
+}
+
+let navRecognition = null;
+function highlightNavLink(path) {
+  // Find any <a> tag whose href ends with the path
+  const links = document.querySelectorAll("a");
+  for (const link of links) {
+    if (link.getAttribute("href") === path || link.href.endsWith(path)) {
+      link.classList.add("nav-voice-highlight");
+      setTimeout(() => link.classList.remove("nav-voice-highlight"), 800);
+      break;
+    }
+  }
+}
+function toggleNavVoice() {
+  const hasSR =
+    "webkitSpeechRecognition" in window || "SpeechRecognition" in window;
+  if (!hasSR) {
+    showToast("Voice navigation not supported in this browser");
+    return;
+  }
+
+  const modal = document.getElementById("navVoiceModal");
+  const fab = document.getElementById("navVoiceFab");
+  if (modal) modal.style.display = "flex";
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  navRecognition = new SR();
+  navRecognition.lang = "en-US";
+  navRecognition.continuous = false;
+  navRecognition.interimResults = true;
+  navRecognition.maxAlternatives = 5;
+
+
+ navRecognition.onresult = (e) => {
+   const result = e.results[e.results.length - 1];
+
+   // Try all alternatives, pick the first one that matches a route
+   let transcript = result[0].transcript;
+   let navRoute = null;
+
+   for (let i = 0; i < result.length; i++) {
+     const alt = result[i].transcript;
+     const match = matchNavRoute(alt);
+     if (match) {
+       transcript = alt;
+       navRoute = match;
+       break;
+     }
+   }
+
+   // If no alternative matched, use the top transcript
+   if (!navRoute) transcript = result[0].transcript;
+
+   const navVoiceText = document.getElementById("navVoiceText");
+   if (navVoiceText) navVoiceText.textContent = `"${transcript}"`;
+
+   if (e.results[0].isFinal) {
+     if (!navRoute) navRoute = matchNavRoute(transcript);
+      if (navRoute) {
+        const label = navRoute.label || navRoute.path || navRoute.action;
+        const msg = `Selecting ${label}`;
+        if (navVoiceText) navVoiceText.textContent = msg;
+        if (navRoute.path) highlightNavLink(navRoute.path);
+
+        // Speak the response
+        const utterance = new SpeechSynthesisUtterance(msg);
+        utterance.lang = "en-US";
+        utterance.rate = 1;
+        window.speechSynthesis.speak(utterance);
+
+        setTimeout(() => {
+          cancelNavVoice();
+          if (navRoute.action === "back") {
+            window.history.back();
+          } else if (navRoute.action === "dark") {
+            darkMode = true;
+            document.body.classList.add("dark");
+            localStorage.setItem("chefai_dark", "1");
+            updateThemeBtn();
+          } else if (navRoute.action === "light") {
+            darkMode = false;
+            document.body.classList.remove("dark");
+            localStorage.setItem("chefai_dark", "0");
+            updateThemeBtn();
+          } else {
+            window.location.href = navRoute.path;
+          }
+        }, 500);
+      } else {
+        if (navVoiceText)
+          navVoiceText.textContent = `"${transcript}" — page not found`;
+        setTimeout(() => cancelNavVoice(), 1500);
+      }
+   }
+ };
+
+  navRecognition.onerror = () => {
+    cancelNavVoice();
+    showToast("Voice error. Try again.");
+  };
+  navRecognition.onend = () => cancelNavVoice();
+  navRecognition.start();
+  if (fab) fab.classList.add("nav-listening");
+}
+
+function cancelNavVoice() {
+  if (navRecognition) {
+    try {
+      navRecognition.stop();
+    } catch (e) {}
+    navRecognition = null;
+  }
+  const modal = document.getElementById("navVoiceModal");
+  const fab = document.getElementById("navVoiceFab");
+  const navVoiceText = document.getElementById("navVoiceText");
+  if (modal) modal.style.display = "none";
+  if (fab) fab.classList.remove("nav-listening");
+  if (navVoiceText) navVoiceText.textContent = "Say a page name to navigate";
 }
 
 /* ============================================================
