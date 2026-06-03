@@ -1209,6 +1209,10 @@ function toggleNavVoice() {
       const utterance = new SpeechSynthesisUtterance(msg);
       utterance.lang = "en-US";
       utterance.rate = 1;
+      utterance.onstart = () => {
+        const modal = document.getElementById("navVoiceModal");
+        if (modal) modal.style.display = "none";
+      };
       utterance.onend = () => {
         cancelNavVoice();
         if (navRoute.action === "dark") {
