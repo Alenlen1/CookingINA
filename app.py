@@ -16,14 +16,14 @@ from chatbot import chatbot_bp
 from routes.auth import auth_bp     
 # ── App setup ──────────────────────────────────────────────────────────────
 app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev")
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['SENDGRID_API_KEY'] = os.environ.get('SENDGRID_API_KEY')
+app.secret_key = os.environ["SECRET_KEY"]
+app.config['MAIL_USERNAME'] = os.environ["MAIL_USERNAME"]
+app.config['SENDGRID_API_KEY'] = os.environ["SENDGRID_API_KEY"]
 # Configure Cloudinary
 cloudinary.config(
-    cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    api_key    = os.environ.get('CLOUDINARY_API_KEY'),
-    api_secret = os.environ.get('CLOUDINARY_API_SECRET'),
+    cloud_name = os.environ["CLOUDINARY_CLOUD_NAME"],
+    api_key    = os.environ["CLOUDINARY_API_KEY"],
+    api_secret = os.environ["CLOUDINARY_API_SECRET"],
     secure     = True
 )
 
@@ -47,10 +47,7 @@ app.register_blueprint(chatbot_bp)
 
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 ALLOWED_EXT   = {'jpg', 'jpeg', 'png', 'webp'}
-DB_URL = os.environ.get(
-    'DATABASE_URL',
-    'postgresql://postgres:admin123@localhost:5432/cookingina'
-)
+DB_URL = os.environ["DATABASE_URL"]
 if DB_URL and DB_URL.startswith("postgres://"):
     DB_URL = DB_URL.replace("postgres://", "postgresql://", 1)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
