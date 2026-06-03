@@ -65,8 +65,13 @@ async function openRecipe(recipeId) {
 
   modal.innerHTML = `
     <div class="modal-body" style="text-align:center;padding:60px 28px">
-      <div style="font-size:48px;margin-bottom:16px">🍳</div>
-      <p style="color:var(--text3);font-weight:300">Loading recipe...</p>
+      <div style="margin-bottom:16px">
+        <img src="/static/images/ina-avatar.png" alt="INA"
+             style="width:80px;height:80px;border-radius:50%;object-fit:cover;
+                    animation:pulse 1.2s ease-in-out infinite;
+                    box-shadow:0 0 0px #E07B39;">
+      </div>
+      <p style="color:#E07B39;font-weight:500">Loading recipe...</p>
     </div>`;
   overlay.classList.add("open");
   document.body.style.overflow = "hidden";

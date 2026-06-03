@@ -3568,3 +3568,8 @@ header {
   50%  { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
+@keyframes pulse {
+  0%   { transform: scale(1);    opacity: 1;    box-shadow: 0 0 0px #E07B39; }
+  50%  { transform: scale(1.08); opacity: 0.85; box-shadow: 0 0 18px #E07B39; }
+  100% { transform: scale(1);    opacity: 1;    box-shadow: 0 0 0px #E07B39; }
+}
