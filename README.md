@@ -39,14 +39,10 @@ A full-stack Filipino recipe-sharing web application built with Python and Flask
 
 **Nutrition Estimation**
 - AI-powered nutrition estimation based on recipe ingredients
-- Provides estimated:
-  - Calories
-  - Protein
-  - Carbohydrates
-  - Fat
-  - Fiber
-  - Serving-based nutrition values
-- Helps users make informed dietary and meal-planning decisions
+- Provides estimated calories, protein, carbs, fat, and fiber per serving
+- Results are cached in the database after the first estimation — 
+  Gemini AI is only called once per recipe, ever
+- Cache is automatically cleared if a recipe's ingredients are edited
 
 **Cooking Game**
 - A fun cooking-themed mini game built into the app (`/game`)
@@ -84,6 +80,7 @@ CookingINA/
 │   ├── migrate_v2.sql
 │   ├── migrate_chatbot.sql
 │   └── migrate_reactions.sql
+│   └── migrate_nutrition_cache.sql 
 ├── routes/
 │   ├── __init__.py
 │   └── auth.py                 # OTP registration, forgot password, change password
@@ -184,6 +181,7 @@ psql -U your_user -d cookingina -f database/schema.sql
 psql -U your_user -d cookingina -f database/migrate_v2.sql
 psql -U your_user -d cookingina -f database/migrate_chatbot.sql
 psql -U your_user -d cookingina -f database/migrate_reactions.sql
+psql -U your_user -d cookingina -f database/migrate_nutrition_cache.sql
 
 
 6. **Run the application**
