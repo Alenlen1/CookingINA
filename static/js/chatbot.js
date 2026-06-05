@@ -409,14 +409,20 @@ function toggleChatVoice() {
   chatRecognition = new SR();
   chatRecognition.lang = "en-PH";
   chatRecognition.continuous = false;
-  chatRecognition.interimResults = false;
+  chatRecognition.interimResults = true;
   if (btn) btn.classList.add("recording");
 
   chatRecognition.onresult = (e) => {
-    const transcript = e.results[0][0].transcript;
     const input = document.getElementById("chatInput");
+    let interim = "";
+    let final = "";
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
     if (input) {
-      input.value = transcript;
+      input.value = final || interim;
+      input.style.transition = "all 0.15s ease";
       autoResize(input);
     }
     if (btn) btn.classList.remove("recording");
@@ -433,9 +439,9 @@ function toggleChatVoice() {
   chatRecognition.start();
 }
 
-/* ================================================================
+/* 
    FLOATING WIDGET
-   ================================================================ */
+   */
 
 let widgetOpen = false;
 let widgetHistory = [];
@@ -525,6 +531,8 @@ async function sendWidgetMessage() {
       _appendWidgetMessage("ai", data.reply);
       widgetHistory.push({ role: "assistant", content: data.reply });
       if (data.conversation_id) widgetConvId = data.conversation_id;
+      lastReply = data.reply;
+      _speakText(data.reply);
     } else {
       _appendWidgetMessage(
         "ai",
@@ -590,4 +598,82 @@ function clearWidgetChat() {
 function _widgetScrollBottom() {
   const el = document.getElementById("widgetMessages");
   if (el) el.scrollTop = el.scrollHeight;
+}
+/* 
+   WIDGET VOICE INPUT (speech-to-text)
+   */
+let widgetRecognition = null;
+
+function toggleWidgetVoice() {
+  stopSpeaking();
+  const btn = document.getElementById("widgetVoiceBtn");
+  if (
+    !("webkitSpeechRecognition" in window) &&
+    !("SpeechRecognition" in window)
+  ) {
+    alert("Voice input is not supported in this browser.");
+    return;
+  }
+  if (widgetRecognition) {
+    widgetRecognition.stop();
+    widgetRecognition = null;
+    if (btn) btn.classList.remove("recording");
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  widgetRecognition = new SR();
+  widgetRecognition.lang = "en-PH";
+  widgetRecognition.continuous = false;
+  widgetRecognition.interimResults = true;
+  if (btn) btn.classList.add("recording");
+
+  widgetRecognition.onresult = (e) => {
+    const input = document.getElementById("widgetInput");
+    let interim = "";
+    let final = "";
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) final += e.results[i][0].transcript;
+      else interim += e.results[i][0].transcript;
+    }
+    if (input) {
+      input.value = final || interim;
+      input.style.transition = "all 0.15s ease";
+      autoResize(input);
+    }
+    if (btn) btn.classList.remove("recording");
+    widgetRecognition = null;
+  };
+  widgetRecognition.onerror = () => {
+    if (btn) btn.classList.remove("recording");
+    widgetRecognition = null;
+  };
+  widgetRecognition.onend = () => {
+    if (btn) btn.classList.remove("recording");
+    widgetRecognition = null;
+  };
+  widgetRecognition.start();
+}
+
+/*
+   WIDGET MUTE / UNMUTE 
+   */
+function toggleWidgetSpeak() {
+  voiceEnabled = !voiceEnabled;
+  const btn = document.getElementById("widgetMuteBtn");
+  if (!btn) return;
+  if (voiceEnabled) {
+    btn.innerHTML = "🔊";
+    btn.title = "Mute INA";
+    if (lastReply) _speakText(lastReply);
+  } else {
+    window.speechSynthesis && window.speechSynthesis.cancel();
+    btn.innerHTML = "🔇";
+    btn.title = "Unmute INA";
+  }
+  // Keep full-chat mute button in sync
+  const chatMuteBtn = document.getElementById("muteSpeakBtn");
+  if (chatMuteBtn) {
+    chatMuteBtn.innerHTML = voiceEnabled ? "🔊" : "🔇";
+    chatMuteBtn.title = voiceEnabled ? "Mute INA" : "Unmute INA";
+  }
 }
