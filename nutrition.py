@@ -1,20 +1,42 @@
 import os
 import json
 from flask import Blueprint, request, jsonify
-from google import genai
+import psycopg2
+import psycopg2.extras
 
 nutrition_bp = Blueprint('nutrition', __name__)
+
+DB_URL = os.environ.get('DATABASE_URL')
+
+def get_db():
+    return psycopg2.connect(DB_URL, cursor_factory=psycopg2.extras.RealDictCursor)
 
 @nutrition_bp.route('/api/nutrition', methods=['POST'])
 def get_nutrition():
     try:
-        body = request.get_json()
+        body        = request.get_json()
         ingredients = body.get('ingredients', [])
-        servings = int(body.get('servings', 1)) or 1
+        servings    = int(body.get('servings', 1)) or 1
+        recipe_id   = body.get('recipe_id')   # may be None for recipes without an id
 
         if not ingredients:
             return jsonify({'error': 'No ingredients provided'}), 400
 
+        # ── Step 1: Check DB cache first ──
+        if recipe_id:
+            conn = get_db()
+            cur  = conn.cursor()
+            cur.execute('SELECT nutrition_json FROM recipes WHERE id = %s', (recipe_id,))
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+
+            if row and row['nutrition_json']:
+                print(f"[NUTRITION] Cache hit for recipe {recipe_id}")
+                return jsonify(json.loads(row['nutrition_json']))
+
+        # ── Step 2: Cache miss — call Gemini ──
+        from google import genai
         client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
 
         ingredient_lines = '\n'.join(f'- {ing}' for ing in ingredients)
@@ -49,7 +71,7 @@ Rules:
 - For uniquely Filipino ingredients (calamansi, bagoong, patis, etc.) use your best estimate
 - Return ONLY the raw JSON — no markdown, no backticks, no explanation"""
 
-        response = client.models.generate_content(
+        response      = client.models.generate_content(
             model='gemini-flash-lite-latest',
             contents=prompt
         )
@@ -73,6 +95,19 @@ Rules:
                 nutrition_data[field] = float(val)
             except (ValueError, TypeError):
                 nutrition_data[field] = 0.0
+
+        # ── Step 3: Save result to DB so next open is instant ──
+        if recipe_id:
+            conn = get_db()
+            cur  = conn.cursor()
+            cur.execute(
+                'UPDATE recipes SET nutrition_json = %s WHERE id = %s',
+                (json.dumps(nutrition_data), recipe_id)
+            )
+            conn.commit()
+            cur.close()
+            conn.close()
+            print(f"[NUTRITION] Saved to DB for recipe {recipe_id}")
 
         print(f"[NUTRITION] Parsed: {nutrition_data}")
         return jsonify(nutrition_data)

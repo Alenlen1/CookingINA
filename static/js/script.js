@@ -13,6 +13,9 @@ let speechSynth = window.speechSynthesis;
 let currentUtterance = null;
 let recognition = null;
 
+// Nutrition cache — prevents repeated Gemini API calls for the same recipe
+const _nutritionCache = new Map();
+
 // Apply saved dark mode immediately (prevents flash)
 if (darkMode) document.body.classList.add("dark");
 updateThemeBtn();
@@ -88,6 +91,7 @@ async function openRecipe(recipeId) {
       .join(". ");
     window._stepsText = stepsText;
     window._currentRecipe = {
+      id: r.id,
       ingredients: r.ingredients,
       servings: r.servings,
       name: r.name,
@@ -267,13 +271,30 @@ async function autoFetchNutrition() {
   if (!recipe || !recipe.ingredients || !recipe.ingredients.length) return;
 
   const servings = Math.max(1, parseInt(recipe.servings) || 1);
+  const cacheKey = recipe.name + "_" + servings;
   const badge = document.getElementById("calorieBadge");
 
+  // ── Cache hit: use saved result, skip Gemini entirely ──
+  if (_nutritionCache.has(cacheKey)) {
+    const data = _nutritionCache.get(cacheKey);
+    const cal = Math.round(parseFloat(data.calories) / servings) || 0;
+    if (badge) {
+      badge.textContent = `🔥 ~${cal} Cal/serving`;
+      badge.classList.add("calorie-badge--loaded");
+    }
+    if (typeof window.renderNutritionData === "function") {
+      window.renderNutritionData(data, servings);
+    }
+    return; // stop here — no API call needed
+  }
+
+  // ── Cache miss: call Gemini and save the result ──
   try {
     const res = await fetch("/api/nutrition", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        recipe_id: recipe.id,
         ingredients: recipe.ingredients.map((i) => i.name),
         servings: servings,
       }),
@@ -282,13 +303,13 @@ async function autoFetchNutrition() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
 
-    const cal = Math.round(parseFloat(data.calories) / servings) || 0;
+    _nutritionCache.set(cacheKey, data); // save so next open is instant
 
+    const cal = Math.round(parseFloat(data.calories) / servings) || 0;
     if (badge) {
       badge.textContent = `🔥 ~${cal} Cal/serving`;
       badge.classList.add("calorie-badge--loaded");
     }
-
     if (typeof window.renderNutritionData === "function") {
       window.renderNutritionData(data, servings);
     }

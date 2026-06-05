@@ -848,7 +848,7 @@ def edit_recipe(recipe_id):
         execute('''
             UPDATE recipes SET name=%s, description=%s, emoji=%s, image_path=%s,
             cook_time=%s, servings=%s, is_spicy=%s, is_quick=%s, is_budget=%s,
-            status=%s, is_public=%s
+            status=%s, is_public=%s, nutrition_json=NULL
             WHERE id=%s
         ''', (name, desc, emoji, img_path, cook_time,
               servings, is_spicy, is_quick, is_budget,
