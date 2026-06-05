@@ -13,7 +13,8 @@ from datetime import datetime
 import cloudinary
 import cloudinary.uploader
 from chatbot import chatbot_bp
-from routes.auth import auth_bp     
+from routes.auth import auth_bp    
+from nutrition import nutrition_bp 
 # ── App setup ──────────────────────────────────────────────────────────────
 app = Flask(__name__)
 app.secret_key = os.environ["SECRET_KEY"]
@@ -41,7 +42,7 @@ def upload_to_cloudinary(file, folder='cookingina'):
         return None
 
 
-
+app.register_blueprint(nutrition_bp)
 app.register_blueprint(auth_bp)
 app.register_blueprint(chatbot_bp)
 

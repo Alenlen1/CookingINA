@@ -87,6 +87,11 @@ async function openRecipe(recipeId) {
       .map((s, idx) => `Step ${idx + 1}: ${s.instruction}`)
       .join(". ");
     window._stepsText = stepsText;
+    window._currentRecipe = {
+      ingredients: r.ingredients,
+      servings: r.servings,
+      name: r.name,
+    };
     const totalCost = r.ingredients.reduce((sum, i) => sum + i.price, 0);
 
     const imgHtml = r.image_path
@@ -174,6 +179,7 @@ async function openRecipe(recipeId) {
           <span>⏱ ${escHtml(r.cook_time)}</span>
           <span>👥 ${r.servings} servings</span>
           <span>🍴 ${r.ingredients.length} ingredients</span>
+          <span class="calorie-badge" id="calorieBadge">🔥 Estimating…</span>
         </div>
 
         <p style="color:var(--text2);font-size:14px;margin-bottom:18px;line-height:1.7;font-weight:300;font-style:italic">
@@ -211,6 +217,20 @@ async function openRecipe(recipeId) {
           <span class="amount">₱${totalCost.toLocaleString()}</span>
         </div>
 
+        <!-- ── Nutrition Estimator ── -->
+        <div class="section-head">🥗 Nutrition Estimate</div>
+        <div id="nutritionBox" class="nutrition-box">
+          <div id="nutritionIdle" class="nutrition-idle" style="display:none">
+            <button id="nutritionBtn" class="nutrition-btn" onclick="fetchNutrition()">
+              Estimate Calories &amp; Macros
+            </button>
+            <span class="nutrition-hint">per serving · using Gemini AI</span>
+          </div>
+          <div id="nutritionLoading" class="nutrition-loading">⏳ Estimating nutrition…</div>
+          <div id="nutritionResult" class="nutrition-result"></div>
+          <div id="nutritionError"  class="nutrition-error"></div>
+        </div>
+
         <div class="section-head">👨‍🍳 Cooking Instructions</div>
         <ol class="steps-list">
           ${r.steps
@@ -231,6 +251,8 @@ async function openRecipe(recipeId) {
         </div>
 
       </div>`;
+    // Auto-fetch nutrition when modal opens
+    autoFetchNutrition();
   } catch (err) {
     modal.innerHTML = `
       <div class="modal-body" style="text-align:center;padding:60px 28px">
@@ -238,6 +260,47 @@ async function openRecipe(recipeId) {
         <p style="color:var(--text3);font-weight:300">Failed to load recipe. Try again.</p>
         <button class="close-btn" onclick="closeModal()" style="margin-top:16px;width:auto;padding:8px 20px;border-radius:50px">Close</button>
       </div>`;
+  }
+}
+async function autoFetchNutrition() {
+  const recipe = window._currentRecipe;
+  if (!recipe || !recipe.ingredients || !recipe.ingredients.length) return;
+
+  const servings = Math.max(1, parseInt(recipe.servings) || 1);
+  const badge = document.getElementById("calorieBadge");
+
+  try {
+    const res = await fetch("/api/nutrition", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ingredients: recipe.ingredients.map((i) => i.name),
+        servings: servings,
+      }),
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    const cal = Math.round(parseFloat(data.calories) / servings) || 0;
+
+    if (badge) {
+      badge.textContent = `🔥 ~${cal} Cal/serving`;
+      badge.classList.add("calorie-badge--loaded");
+    }
+
+    if (typeof window.renderNutritionData === "function") {
+      window.renderNutritionData(data, servings);
+    }
+  } catch (err) {
+    if (badge) {
+      badge.textContent = "🔥 Est. unavailable";
+      badge.style.opacity = "0.5";
+    }
+    const idle = document.getElementById("nutritionIdle");
+    const loading = document.getElementById("nutritionLoading");
+    if (idle) idle.style.display = "flex";
+    if (loading) loading.style.display = "none";
   }
 }
 
@@ -1252,7 +1315,6 @@ function toggleNavVoice() {
   navRecognition.start();
   if (fab) fab.classList.add("nav-listening");
 }
-
 
 function cancelNavVoice() {
   if (navRecognition) {
