@@ -181,7 +181,7 @@ async function openRecipe(recipeId) {
 
         <div class="modal-meta">
           <span>⏱ ${escHtml(r.cook_time)}</span>
-          <span>👥 ${r.servings} servings</span>
+          <span id="metaServings">👥 ${r.servings} servings</span>
           <span>🍴 ${r.ingredients.length} ingredients</span>
           <span class="calorie-badge" id="calorieBadge">🔥 Estimating…</span>
         </div>
@@ -201,14 +201,26 @@ async function openRecipe(recipeId) {
                   onclick="handleFav(${r.id}, this)">
             ${isFav ? "❤️" : "🤍"}
           </button>
+          <button class="print-btn" onclick="printRecipe()" title="Print Recipe">🖨️</button>
+        </div>
+
+        <!-- Serving Adjuster -->
+        <div class="serving-adjuster">
+          <span class="serving-label">👥 Servings</span>
+          <div class="serving-controls">
+            <button class="serving-btn" onclick="adjustServings(-1)">−</button>
+            <span class="serving-count" id="servingCount">${r.servings}</span>
+            <button class="serving-btn" onclick="adjustServings(1)">+</button>
+          </div>
+          <span id="servingBase" style="display:none">${r.servings}</span>
         </div>
 
         <div class="section-head">🧺 Ingredients</div>
-        <ul class="ingredient-list">
+        <ul class="ingredient-list" id="ingredientList">
           ${r.ingredients
             .map(
               (i) => `
-            <li>
+            <li data-base-price="${i.price}">
               <span>${escHtml(i.name)}</span>
               <span class="ing-price">₱${Number(i.price).toLocaleString()}</span>
             </li>`,
@@ -218,7 +230,7 @@ async function openRecipe(recipeId) {
 
         <div class="total-cost">
           <span class="label">💰 Total Estimated Cost</span>
-          <span class="amount">₱${totalCost.toLocaleString()}</span>
+          <span class="amount" id="totalCostAmount">₱${totalCost.toLocaleString()}</span>
         </div>
 
         <!-- ── Nutrition Estimator ── -->
@@ -277,6 +289,7 @@ async function autoFetchNutrition() {
   // ── Cache hit: use saved result, skip Gemini entirely ──
   if (_nutritionCache.has(cacheKey)) {
     const data = _nutritionCache.get(cacheKey);
+    window._lastNutritionData = data; // save for serving adjuster
     const cal = Math.round(parseFloat(data.calories) / servings) || 0;
     if (badge) {
       badge.textContent = `🔥 ~${cal} Cal/serving`;
@@ -304,6 +317,7 @@ async function autoFetchNutrition() {
     if (data.error) throw new Error(data.error);
 
     _nutritionCache.set(cacheKey, data); // save so next open is instant
+    window._lastNutritionData = data; // save for serving adjuster
 
     const cal = Math.round(parseFloat(data.calories) / servings) || 0;
     if (badge) {
@@ -330,6 +344,187 @@ function closeModal() {
   const overlay = document.getElementById("modalOverlay");
   if (overlay) overlay.classList.remove("open");
   document.body.style.overflow = "";
+}
+
+/* ── Serving Adjuster ── */
+function adjustServings(delta) {
+  const countEl = document.getElementById("servingCount");
+  const baseEl = document.getElementById("servingBase");
+  if (!countEl || !baseEl) return;
+
+  const base = parseInt(baseEl.textContent) || 1;
+  const current = parseInt(countEl.textContent) || base;
+  const next = Math.max(1, current + delta);
+  countEl.textContent = next;
+
+  // Update meta servings at the top of the modal
+  const metaServings = document.getElementById("metaServings");
+  if (metaServings) metaServings.textContent = `👥 ${next} servings`;
+
+  // Scale ingredient prices
+  const items = document.querySelectorAll("#ingredientList li");
+  let newTotal = 0;
+  items.forEach((li) => {
+    const basePrice = parseFloat(li.dataset.basePrice) || 0;
+    const scaled = Math.round((basePrice / base) * next);
+    newTotal += scaled;
+    const priceEl = li.querySelector(".ing-price");
+    if (priceEl) priceEl.textContent = "₱" + scaled.toLocaleString();
+  });
+
+  // Update total cost
+  const totalEl = document.getElementById("totalCostAmount");
+  if (totalEl) totalEl.textContent = "₱" + newTotal.toLocaleString();
+
+  // Re-render nutrition for new serving count
+  const recipe = window._currentRecipe;
+  if (recipe && window._lastNutritionData) {
+    const data = window._lastNutritionData;
+    if (typeof window.renderNutritionData === "function") {
+      window.renderNutritionData(data, next);
+    }
+    // Update calorie badge
+    const badge = document.getElementById("calorieBadge");
+    if (badge) {
+      const cal = Math.round(parseFloat(data.calories) / next) || 0;
+      badge.textContent = `🔥 ~${cal} Cal/serving`;
+      badge.classList.add("calorie-badge--loaded");
+    }
+  }
+}
+
+/* ── Print Recipe ── */
+function printRecipe() {
+  const recipe = window._currentRecipe;
+  if (!recipe) return;
+
+  const name = document.querySelector(".modal-title")?.textContent || "Recipe";
+  const meta = document.querySelector(".modal-meta")?.innerText || "";
+  const description =
+    document.querySelector(".modal-body > p")?.innerText || "";
+  const servingCount =
+    document.getElementById("servingCount")?.textContent || recipe.servings;
+
+  // Recipe image
+  const imgEl = document.querySelector(".modal-img img");
+  const imgSrc = imgEl ? imgEl.src : "";
+  const recipeImgHtml = imgSrc
+    ? `<img src="${imgSrc}" alt="${name}"
+           style="width:100%;max-height:320px;object-fit:cover;border-radius:10px;margin-bottom:20px;">`
+    : "";
+
+  // Ingredients
+  const ingItems = document.querySelectorAll("#ingredientList li");
+  let ingredientsHtml = "";
+  ingItems.forEach((li) => {
+    const ingName = li.querySelector("span:first-child")?.textContent || "";
+    const ingPrice = li.querySelector(".ing-price")?.textContent || "";
+    ingredientsHtml += `<li>${ingName} <span style="color:#888">${ingPrice}</span></li>`;
+  });
+
+  const totalCost =
+    document.getElementById("totalCostAmount")?.textContent || "";
+
+  // Steps
+  const stepItems = document.querySelectorAll(".steps-list .step");
+  let stepsHtml = "";
+  stepItems.forEach((step, idx) => {
+    const text = step.querySelector(".step-text")?.textContent || "";
+    stepsHtml += `<li>${text}</li>`;
+  });
+
+  // Nutrition — read structured values instead of raw innerText
+  const calValue =
+    document.querySelector(".nutrition-cal-value")?.textContent || "";
+  const protValue =
+    document
+      .querySelector(".macro-fill.protein")
+      ?.closest(".macro-row")
+      ?.querySelector(".macro-value")?.textContent || "";
+  const carbValue =
+    document
+      .querySelector(".macro-fill.carbs")
+      ?.closest(".macro-row")
+      ?.querySelector(".macro-value")?.textContent || "";
+  const fatValue =
+    document
+      .querySelector(".macro-fill.fat")
+      ?.closest(".macro-row")
+      ?.querySelector(".macro-value")?.textContent || "";
+  const fibValue =
+    document
+      .querySelector(".macro-fill.fiber")
+      ?.closest(".macro-row")
+      ?.querySelector(".macro-value")?.textContent || "";
+  const totalCalValue =
+    document.querySelector(".nutrition-total-value")?.textContent || "";
+  const nutritionNote =
+    document.querySelector(".nutrition-note")?.textContent || "";
+
+  const nutritionHtml = calValue
+    ? `
+    <div class="nutrition-box" style="background:#f9f9f9;border:1px solid #ddd;border-radius:8px;padding:16px;margin-bottom:20px">
+      <strong style="font-size:15px">🥗 Nutrition Estimate</strong>
+      <span style="font-size:12px;color:#888;margin-left:8px">per serving · ${servingCount} servings</span>
+      <div style="margin-top:12px;margin-bottom:8px">
+        <span style="font-size:32px;font-weight:bold;color:#E07B39">${calValue}</span>
+        <span style="font-size:13px;color:#888;margin-left:6px">Cal per serving</span>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:10px">
+        <tr><td style="padding:4px 0;color:#555;width:70px">Protein</td><td style="padding:4px 8px;font-weight:600">${protValue}</td></tr>
+        <tr><td style="padding:4px 0;color:#555">Carbs</td><td style="padding:4px 8px;font-weight:600">${carbValue}</td></tr>
+        <tr><td style="padding:4px 0;color:#555">Fat</td><td style="padding:4px 8px;font-weight:600">${fatValue}</td></tr>
+        <tr><td style="padding:4px 0;color:#555">Fiber</td><td style="padding:4px 8px;font-weight:600">${fibValue}</td></tr>
+      </table>
+      <div style="border-top:1px solid #ddd;padding-top:8px;font-size:12px;color:#888">
+        Total recipe: <strong style="color:#222">${totalCalValue}</strong>
+      </div>
+      ${nutritionNote ? `<p style="font-size:11px;color:#aaa;margin-top:8px;margin-bottom:0">${nutritionNote}</p>` : ""}
+    </div>`
+    : "";
+
+  const win = window.open("", "_blank");
+  win.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${name}</title>
+      <style>
+        body { font-family: Georgia, serif; max-width: 680px; margin: 40px auto; padding: 0 20px; color: #222; }
+        h1   { font-size: 28px; margin-bottom: 4px; }
+        .meta { font-size: 13px; color: #888; margin-bottom: 16px; }
+        .desc { font-style: italic; color: #555; margin-bottom: 20px; font-size: 14px; }
+        h2   { font-size: 16px; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-top: 24px; }
+        ul, ol { padding-left: 20px; }
+        li   { margin-bottom: 8px; font-size: 14px; line-height: 1.6; }
+        .total { font-weight: bold; margin-top: 10px; font-size: 14px; }
+        .footer { margin-top: 40px; font-size: 11px; color: #aaa; text-align: center; }
+        .nutrition-box { page-break-inside: avoid; break-inside: avoid; }
+        table { page-break-inside: avoid; break-inside: avoid; }
+        ol li { page-break-inside: avoid; break-inside: avoid; }
+      </style>
+    </head>
+    <body>
+      ${recipeImgHtml}
+      <h1>${name}</h1>
+      <div class="meta">${meta}</div>
+      <div class="desc">${description}</div>
+
+      <h2>🧺 Ingredients (${servingCount} servings)</h2>
+      <ul>${ingredientsHtml}</ul>
+      <p class="total">💰 Total Estimated Cost: ${totalCost}</p>
+
+      ${nutritionHtml}
+
+      <h2>👨‍🍳 Cooking Instructions</h2>
+      <ol>${stepsHtml}</ol>
+
+      <div class="footer">Printed from CookingINA · cookingina-o5ch.onrender.com</div>
+    </body>
+    </html>
+  `);
+  win.document.close();
+  win.print();
 }
 
 // Close modal on Escape key

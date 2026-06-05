@@ -1,4 +1,4 @@
-  /* ── Section wrapper ───────────────────────────────────────── */
+/* ── Section wrapper ───────────────────────────────────────── */
 .nutrition-box {
   margin-bottom: 28px;
 }
@@ -246,3 +246,73 @@
   border-radius: 50px;
   opacity: 1;
 }
+
+/* ── Serving Adjuster ──────────────────────────────────────── */
+
+.serving-adjuster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.serving-label {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 500;
+  flex: 1;
+}
+
+.serving-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.serving-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.serving-btn:hover  { background: var(--accent); color: #fff; border-color: var(--accent); }
+.serving-btn:active { transform: scale(0.94); }
+
+.serving-count {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 24px;
+  text-align: center;
+}
+
+
+/* ── Print Button ──────────────────────────────────────────── */
+
+.print-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 6px 12px;
+  font-size: 15px;
+  cursor: pointer;
+  color: var(--text2);
+  transition: background 0.15s ease;
+  margin-left: auto;
+}
+
+.print-btn:hover { background: var(--bg2); }
