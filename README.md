@@ -37,6 +37,17 @@ A full-stack Filipino recipe-sharing web application built with Python and Flask
 - Overview stats: total, pending, approved, rejected recipe counts
 - View recently added and pending recipes
 
+**Nutrition Estimation**
+- AI-powered nutrition estimation based on recipe ingredients
+- Provides estimated:
+  - Calories
+  - Protein
+  - Carbohydrates
+  - Fat
+  - Fiber
+  - Serving-based nutrition values
+- Helps users make informed dietary and meal-planning decisions
+
 **Cooking Game**
 - A fun cooking-themed mini game built into the app (`/game`)
 
@@ -64,6 +75,7 @@ A full-stack Filipino recipe-sharing web application built with Python and Flask
 CookingINA/
 ├── app.py                      # Main Flask application and all core routes
 ├── chatbot.py                  # Chatbot blueprint (Google Gemini AI)
+├── nutrition.py                # Nutrition estimation and analysis module
 ├── requirements.txt            # Python dependencies
 ├── .env                        # Environment variables (not committed)
 ├── .gitignore
@@ -103,14 +115,15 @@ CookingINA/
     │   ├── auth_modals.css
     │   ├── chatbot.css
     │   ├── edit_profile.css
+    │   ├── nutrition.css       # Nutrition estimation styles
     │   └── game.css
     └── js/
         ├── script.js
         ├── auth.js
         ├── chatbot.js
+        ├── nutrition.js        # Nutrition estimation functionality
         ├── game.js
         └── terms.js
-```
 
 ---
 
