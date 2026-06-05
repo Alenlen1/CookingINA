@@ -178,6 +178,10 @@
             {% if recipe_of_day.description %}
             <p class="rotd-desc">{{ recipe_of_day.description }}</p>
             {% endif %}
+            <div class="rotd-publisher">
+              <span class="rotd-pub-label">By</span>
+              <span class="rotd-pub-name">{{ recipe_of_day.username or 'Unknown' }}</span>
+            </div>
             <div class="rotd-stats">
               <span class="rotd-stat">⏱ {{ recipe_of_day.cook_time }}</span>
               <span class="rotd-stat">👥 {{ recipe_of_day.servings }} servings</span>

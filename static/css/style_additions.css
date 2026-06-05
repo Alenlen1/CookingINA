@@ -611,6 +611,25 @@ body.dark .react-btn.active.dislike-btn {
 .rotd-cta:hover .rotd-cta-arrow {
   transform: translateX(4px);
 }
+.rotd-publisher {
+  font-size: 13px;
+  color: var(--text3); 
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: -2px; 
+}
+
+.rotd-pub-label {
+  color: var(--text2); 
+  font-weight: 500;
+}
+
+.rotd-pub-name {
+  color: var(--accent); 
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
 
 /* Responsive */
 @media (max-width: 768px) {
