@@ -148,6 +148,53 @@
       {% endif %}
     </div>
 
+    {% if recipe_of_day and not search %}
+    <div class="rotd-section">
+      <div class="rotd-card" onclick="openRecipe({{ recipe_of_day.id }})">
+        <div class="rotd-badge">
+          <span class="rotd-badge-star">✦</span>
+          Recipe of the Day
+        </div>
+        <div class="rotd-content">
+          <div class="rotd-image">
+            {% if recipe_of_day.image_path %}
+            <img
+              src="{{ recipe_of_day.image_path if recipe_of_day.image_path.startswith('http') else url_for('static', filename=recipe_of_day.image_path) }}"
+              alt="{{ recipe_of_day.name }}"
+              onerror="this.parentElement.innerHTML='<span class=rotd-emoji>{{ recipe_of_day.emoji }}</span>'"
+            />
+            {% else %}
+            <span class="rotd-emoji">{{ recipe_of_day.emoji }}</span>
+            {% endif %}
+            <div class="rotd-image-overlay"></div>
+          </div>
+          <div class="rotd-info">
+            <div class="rotd-meta-row">
+              {% if recipe_of_day.is_spicy %}<span class="rotd-tag rotd-tag-spicy">🌶️ Spicy</span>{% endif %}
+              {% if recipe_of_day.is_quick %}<span class="rotd-tag rotd-tag-quick">⚡ Quick</span>{% endif %}
+              {% if recipe_of_day.is_budget %}<span class="rotd-tag rotd-tag-budget">💰 Budget</span>{% endif %}
+            </div>
+            <h2 class="rotd-title">{{ recipe_of_day.name }}</h2>
+            {% if recipe_of_day.description %}
+            <p class="rotd-desc">{{ recipe_of_day.description }}</p>
+            {% endif %}
+            <div class="rotd-stats">
+              <span class="rotd-stat">⏱ {{ recipe_of_day.cook_time }}</span>
+              <span class="rotd-stat">👥 {{ recipe_of_day.servings }} servings</span>
+              {% if recipe_of_day.avg_rating and recipe_of_day.avg_rating > 0 %}
+              <span class="rotd-stat rotd-stat-rating">⭐ {{ recipe_of_day.avg_rating }}</span>
+              {% endif %}
+              <span class="rotd-stat">₱{{ '{:,}'.format(recipe_of_day.total_cost | int) }}</span>
+            </div>
+            <button class="rotd-cta">
+              View Recipe <span class="rotd-cta-arrow">→</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
     <!-- ============================================================
        FILTERS
        ============================================================ -->
@@ -156,31 +203,31 @@
         class="filter-btn {% if active_filter == 'all' %}active{% endif %}"
         onclick="setFilter('all', this)"
       >
-        🍽 All
+        🍽 All{% if filter_counts.get('all') %} <span class="filter-count">{{ filter_counts['all'] }}</span>{% endif %}
       </button>
       <button
         class="filter-btn {% if active_filter == 'spicy' %}active{% endif %}"
         onclick="setFilter('spicy', this)"
       >
-        🌶️ Spicy
+        🌶️ Spicy{% if filter_counts.get('spicy') %} <span class="filter-count">{{ filter_counts['spicy'] }}</span>{% endif %}
       </button>
       <button
         class="filter-btn {% if active_filter == 'quick' %}active{% endif %}"
         onclick="setFilter('quick', this)"
       >
-        ⚡ Quick
+        ⚡ Quick{% if filter_counts.get('quick') %} <span class="filter-count">{{ filter_counts['quick'] }}</span>{% endif %}
       </button>
       <button
         class="filter-btn {% if active_filter == 'budget' %}active{% endif %}"
         onclick="setFilter('budget', this)"
       >
-        💰 Budget
+        💰 Budget{% if filter_counts.get('budget') %} <span class="filter-count">{{ filter_counts['budget'] }}</span>{% endif %}
       </button>
       <button
         class="filter-btn {% if active_filter == 'favorites' %}active{% endif %}"
         onclick="setFilter('favorites', this)"
       >
-        ❤️ Favorites
+        ❤️ Favorites{% if filter_counts.get('favorites') %} <span class="filter-count">{{ filter_counts['favorites'] }}</span>{% endif %}
       </button>
     </div>
 

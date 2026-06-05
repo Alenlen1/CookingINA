@@ -270,11 +270,62 @@ def index():
         favs = query('SELECT recipe_id FROM favorites WHERE user_id=%s', (u['id'],))
         fav_ids = {f['recipe_id'] for f in favs}
 
+    # ── Recipe of the Day ───────────────────────────────────────────────────
+    # Pick a deterministic daily recipe using day-of-year seed
+    recipe_of_day = None
+    try:
+        from datetime import date
+        all_approved = query(
+            "SELECT r.*, u.username, COALESCE(SUM(i.price),0) AS total_cost, "
+            "COALESCE(ROUND(AVG(rt.rating)::numeric,1),0) AS avg_rating "
+            "FROM recipes r "
+            "LEFT JOIN users u ON r.user_id = u.id "
+            "LEFT JOIN ingredients i ON i.recipe_id = r.id "
+            "LEFT JOIN ratings rt ON rt.recipe_id = r.id "
+            "WHERE r.status = 'approved' AND r.is_public = TRUE "
+            "GROUP BY r.id, u.username ORDER BY r.id ASC"
+        )
+        if all_approved:
+            day_seed = date.today().timetuple().tm_yday
+            recipe_of_day = all_approved[day_seed % len(all_approved)]
+    except Exception:
+        recipe_of_day = None
+
+    # ── Filter counts ───────────────────────────────────────────────────────
+    filter_counts = {}
+    try:
+        count_rows = query(
+            "SELECT "
+            "COUNT(*) AS all_count, "
+            "COUNT(*) FILTER (WHERE is_spicy = TRUE) AS spicy_count, "
+            "COUNT(*) FILTER (WHERE is_quick = TRUE) AS quick_count, "
+            "COUNT(*) FILTER (WHERE is_budget = TRUE) AS budget_count "
+            "FROM recipes WHERE status = 'approved' AND is_public = TRUE",
+            one=True
+        )
+        if count_rows:
+            filter_counts = {
+                'all':    count_rows['all_count'],
+                'spicy':  count_rows['spicy_count'],
+                'quick':  count_rows['quick_count'],
+                'budget': count_rows['budget_count'],
+            }
+            if u:
+                fav_count = query(
+                    'SELECT COUNT(*) AS cnt FROM favorites WHERE user_id=%s', (u['id'],), one=True)
+                filter_counts['favorites'] = fav_count['cnt'] if fav_count else 0
+            else:
+                filter_counts['favorites'] = 0
+    except Exception:
+        filter_counts = {}
+
     return render_template('index.html',
                            recipes=recipes,
                            fav_ids=fav_ids,
                            search=search,
-                           active_filter=filt)
+                           active_filter=filt,
+                           recipe_of_day=recipe_of_day,
+                           filter_counts=filter_counts)
 
 
 # ── Recipe Detail (AJAX) ────────────────────────────────────────────────────
