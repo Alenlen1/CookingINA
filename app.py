@@ -328,6 +328,137 @@ def index():
                            filter_counts=filter_counts)
 
 
+
+
+
+# ── AJAX Live Search API ────────────────────────────────────────────────────
+@app.route('/api/search')
+def ajax_search():
+    q    = request.args.get('q', '').strip()
+    filt = request.args.get('filter', 'all')
+    u    = current_user()
+
+    base_sql = """
+        SELECT r.*,
+               u.username,
+               COALESCE(ROUND(AVG(rt.rating)::numeric,1),0) AS avg_rating,
+               COUNT(DISTINCT rt.id) AS rating_count,
+               COALESCE(SUM(i.price), 0) AS total_cost
+        FROM recipes r
+        LEFT JOIN users      u  ON r.user_id   = u.id
+        LEFT JOIN ratings    rt ON rt.recipe_id = r.id
+        LEFT JOIN ingredients i ON i.recipe_id  = r.id
+    """
+    where_clauses = []
+    params = []
+
+    if not u or u['role'] != 'admin':
+        where_clauses.append("r.status = 'approved' AND r.is_public = TRUE")
+
+    if q:
+        where_clauses.append("""(
+            r.name ILIKE %s
+            OR EXISTS (SELECT 1 FROM ingredients ing WHERE ing.recipe_id=r.id AND ing.name ILIKE %s)
+            OR EXISTS (SELECT 1 FROM recipe_allergens al WHERE al.recipe_id=r.id AND al.allergen ILIKE %s)
+        )""")
+        like = f'%{q}%'
+        params += [like, like, like]
+
+    if filt == 'spicy':
+        where_clauses.append('r.is_spicy = TRUE')
+    elif filt == 'quick':
+        where_clauses.append('r.is_quick = TRUE')
+    elif filt == 'budget':
+        where_clauses.append('r.is_budget = TRUE')
+    elif filt == 'favorites' and u:
+        where_clauses.append('EXISTS (SELECT 1 FROM favorites f WHERE f.recipe_id=r.id AND f.user_id=%s)')
+        params.append(u['id'])
+    elif filt == 'favorites':
+        where_clauses.append('FALSE')
+
+    if where_clauses:
+        base_sql += ' WHERE ' + ' AND '.join(where_clauses)
+    base_sql += ' GROUP BY r.id, u.username ORDER BY r.created_at DESC LIMIT 24'
+
+    recipes = query(base_sql, tuple(params))
+
+    fav_ids = set()
+    if u:
+        favs = query('SELECT recipe_id FROM favorites WHERE user_id=%s', (u['id'],))
+        fav_ids = {f['recipe_id'] for f in favs}
+
+    results = []
+    if recipes:
+        for r in recipes:
+            results.append({
+                'id': r['id'],
+                'name': r['name'],
+                'description': r['description'] or '',
+                'image_path': r['image_path'] or '',
+                'emoji': r.get('emoji', '🍽️') or '🍽️',
+                'cook_time': r.get('cook_time', '') or '',
+                'servings': r.get('servings', '') or '',
+                'avg_rating': float(r['avg_rating']) if r['avg_rating'] else 0,
+                'total_cost': float(r['total_cost']) if r['total_cost'] else 0,
+                'is_spicy': bool(r['is_spicy']),
+                'is_quick': bool(r['is_quick']),
+                'is_budget': bool(r['is_budget']),
+                'username': r['username'] or '',
+                'is_fav': r['id'] in fav_ids,
+            })
+
+    return jsonify({
+        'recipes': results,
+        'count': len(results),
+        'query': q,
+        'filter': filt,
+    })
+
+# ── Search Autocomplete API ─────────────────────────────────────────────────
+@app.route('/api/search-suggestions')
+def search_suggestions():
+    q = request.args.get('q', '').strip()
+    if len(q) < 1:
+        return jsonify([])
+    like = f'%{q}%'          # contains match — works for ingredients like "red onions"
+    name_like = f'{q}%'      # starts-with for recipe names (prioritised)
+    rows = query(
+        """
+        SELECT DISTINCT r.id, r.name, r.is_quick, r.is_budget, r.is_spicy,
+               COALESCE(SUM(i.price), 0) AS total_cost,
+               -- matched_ingredient: first ingredient name that matches the query
+               (SELECT ing.name FROM ingredients ing
+                WHERE ing.recipe_id = r.id AND ing.name ILIKE %s
+                ORDER BY ing.name ASC LIMIT 1) AS matched_ingredient,
+               -- name_match: 1 if recipe name starts with query (for sorting)
+               CASE WHEN r.name ILIKE %s THEN 1 ELSE 0 END AS name_match
+        FROM recipes r
+        LEFT JOIN ingredients i ON i.recipe_id = r.id
+        WHERE r.status = 'approved' AND r.is_public = TRUE
+          AND (
+            r.name ILIKE %s
+            OR EXISTS (SELECT 1 FROM ingredients ing WHERE ing.recipe_id = r.id AND ing.name ILIKE %s)
+          )
+        GROUP BY r.id
+        ORDER BY name_match DESC, r.name ASC
+        LIMIT 8
+        """,
+        (like, name_like, like, like)
+    )
+    results = []
+    if rows:
+        for r in rows:
+            results.append({
+                'id': r['id'],
+                'name': r['name'],
+                'cost': float(r['total_cost']) if r['total_cost'] else 0,
+                'is_quick': r['is_quick'],
+                'is_budget': r['is_budget'],
+                'is_spicy': r['is_spicy'],
+                'matched_ingredient': r['matched_ingredient'],
+            })
+    return jsonify(results)
+
 # ── Recipe Detail (AJAX) ────────────────────────────────────────────────────
 
 @app.route('/recipe/<int:recipe_id>')

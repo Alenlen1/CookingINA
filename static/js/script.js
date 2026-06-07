@@ -1,13 +1,4 @@
-/* ============================================================
-   Cooking INA — Main JavaScript
-   ============================================================ */
-
 "use strict";
-
-/* ============================================================
-   GLOBAL STATE
-   ============================================================ */
-
 let darkMode = localStorage.getItem("cookingina_dark") === "1";
 let speechSynth = window.speechSynthesis;
 let currentUtterance = null;
@@ -42,13 +33,23 @@ function toggleTheme() {
 
 function setFilter(filter, btn) {
   const hiddenFilter = document.getElementById("hiddenFilter");
+  const hiddenFilterMobile = document.getElementById("hiddenFilterMobile");
   const searchForm = document.getElementById("searchForm");
+  const searchFormMobile = document.getElementById("searchFormMobile");
   const searchInput = document.getElementById("searchInput");
+  const searchInputMobile = document.getElementById("searchInputMobile");
 
   if (hiddenFilter) hiddenFilter.value = filter;
+  if (hiddenFilterMobile) hiddenFilterMobile.value = filter;
   if (filter !== "all" && searchInput) searchInput.value = "";
+  if (filter !== "all" && searchInputMobile) searchInputMobile.value = "";
 
-  if (searchForm) {
+  // Submit whichever form is visible (mobile or desktop)
+  const isMobile = window.innerWidth <= 768;
+  const activeForm = isMobile ? searchFormMobile : searchForm;
+  if (activeForm) {
+    activeForm.submit();
+  } else if (searchForm) {
     searchForm.submit();
   } else {
     window.location.href = `/?filter=${filter}`;
@@ -1243,9 +1244,16 @@ function toggleVoice() {
 
     if (e.results[0].isFinal) {
       const searchInput = document.getElementById("searchInput");
+      const searchInputMobile = document.getElementById("searchInputMobile");
       if (searchInput) searchInput.value = transcript;
+      if (searchInputMobile) searchInputMobile.value = transcript;
       cancelVoice();
-      const form = document.getElementById("searchForm");
+      const isMobile = window.innerWidth <= 768;
+      const form = isMobile
+        ? document.getElementById("searchFormMobile") ||
+          document.getElementById("searchForm")
+        : document.getElementById("searchForm") ||
+          document.getElementById("searchFormMobile");
       if (form) form.submit();
     }
   };
@@ -1780,3 +1788,401 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+/* ================================================================
+   MOBILE SEARCH — auto-submit on Enter key
+   ================================================================ */
+(function () {
+  const mobileInput = document.getElementById("searchInputMobile");
+  const mobileForm = document.getElementById("searchFormMobile");
+  if (mobileInput && mobileForm) {
+    mobileInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        mobileForm.submit();
+      }
+    });
+    // Also sync with desktop hidden filter
+    mobileInput.addEventListener("input", function () {
+      const desktopInput = document.getElementById("searchInput");
+      if (desktopInput) desktopInput.value = mobileInput.value;
+    });
+  }
+})();
+
+/* ================================================================
+   LIVE SEARCH AUTOCOMPLETE
+   ================================================================ */
+(function () {
+  function setupAutocomplete(inputId, dropdownId, formId) {
+    const input = document.getElementById(inputId);
+    const dropdown = document.getElementById(dropdownId);
+    const form = document.getElementById(formId);
+    if (!input || !dropdown) return;
+
+    let debounceTimer = null;
+    let currentHighlight = -1;
+    let lastResults = [];
+
+    function highlight(text, query) {
+      if (!query) return text;
+      const idx = text.toLowerCase().indexOf(query.toLowerCase());
+      if (idx === -1) return text;
+      return (
+        text.slice(0, idx) +
+        "<em>" +
+        text.slice(idx, idx + query.length) +
+        "</em>" +
+        text.slice(idx + query.length)
+      );
+    }
+
+    function getBadges(item) {
+      const badges = [];
+      if (item.is_quick) badges.push("⚡ Quick");
+      if (item.is_budget) badges.push("💰 Budget");
+      if (item.is_spicy) badges.push("🌶️ Spicy");
+      return badges;
+    }
+
+    function renderDropdown(results, query) {
+      lastResults = results;
+      currentHighlight = -1;
+      dropdown.innerHTML = "";
+
+      if (results.length === 0) {
+        dropdown.innerHTML =
+          '<div class="dropdown-no-results">No recipes found for "' +
+          query +
+          '"</div>';
+        dropdown.classList.add("open");
+        return;
+      }
+
+      results.forEach(function (item, idx) {
+        const badges = getBadges(item);
+        const badgeHTML = badges
+          .map((b) => '<span class="dropdown-item-badge">' + b + "</span>")
+          .join("");
+        const costStr = item.cost > 0 ? "₱" + item.cost.toFixed(0) : "";
+
+        const el = document.createElement("div");
+        el.className = "search-dropdown-item";
+        el.dataset.idx = idx;
+        // Show matched ingredient hint if the recipe name itself doesn't contain the query
+        const nameMatches = item.name
+          .toLowerCase()
+          .includes(query.toLowerCase());
+        const ingredientHint =
+          !nameMatches && item.matched_ingredient
+            ? '<span class="dropdown-ingredient-hint">has <em>' +
+              highlight(item.matched_ingredient, query) +
+              "</em></span>"
+            : "";
+        el.innerHTML = `
+          <div class="dropdown-item-icon">🍽️</div>
+          <div class="dropdown-item-info">
+            <div class="dropdown-item-name">${highlight(item.name, query)}</div>
+            <div class="dropdown-item-meta">
+              ${ingredientHint}
+              ${costStr ? "<span>" + costStr + "</span>" : ""}
+              ${badgeHTML}
+            </div>
+          </div>
+        `;
+        // mousedown for desktop, touchstart for mobile (fires before blur)
+        el.addEventListener("mousedown", function (e) {
+          e.preventDefault();
+          selectItem(item);
+        });
+        el.addEventListener(
+          "touchstart",
+          function (e) {
+            e.preventDefault();
+            selectItem(item);
+          },
+          { passive: false },
+        );
+        dropdown.appendChild(el);
+      });
+
+      dropdown.classList.add("open");
+    }
+
+    function selectItem(item) {
+      input.value = item.name;
+      dropdown.classList.remove("open");
+      dropdown.innerHTML = "";
+      if (form) form.submit();
+    }
+
+    function closeDropdown() {
+      dropdown.classList.remove("open");
+      currentHighlight = -1;
+    }
+
+    function fetchSuggestions(q) {
+      if (q.length < 1) {
+        closeDropdown();
+        return;
+      }
+      fetch("/api/search-suggestions?q=" + encodeURIComponent(q))
+        .then((r) => r.json())
+        .then((data) => renderDropdown(data, q))
+        .catch(() => closeDropdown());
+    }
+
+    input.addEventListener("input", function () {
+      clearTimeout(debounceTimer);
+      const q = input.value.trim();
+      if (!q) {
+        closeDropdown();
+        return;
+      }
+      debounceTimer = setTimeout(() => fetchSuggestions(q), 180);
+    });
+
+    input.addEventListener("keydown", function (e) {
+      const items = dropdown.querySelectorAll(".search-dropdown-item");
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (currentHighlight < items.length - 1) currentHighlight++;
+        items.forEach((el, i) =>
+          el.classList.toggle("highlighted", i === currentHighlight),
+        );
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (currentHighlight > 0) currentHighlight--;
+        items.forEach((el, i) =>
+          el.classList.toggle("highlighted", i === currentHighlight),
+        );
+      } else if (e.key === "Enter") {
+        if (currentHighlight >= 0 && lastResults[currentHighlight]) {
+          e.preventDefault();
+          selectItem(lastResults[currentHighlight]);
+        } else {
+          closeDropdown();
+          if (form) form.submit();
+        }
+      } else if (e.key === "Escape") {
+        closeDropdown();
+      }
+    });
+
+    input.addEventListener("focus", function () {
+      if (input.value.trim().length >= 1 && lastResults.length > 0) {
+        dropdown.classList.add("open");
+      }
+    });
+
+    document.addEventListener("click", function (e) {
+      if (!dropdown.contains(e.target) && e.target !== input) {
+        closeDropdown();
+      }
+    });
+  }
+
+  // Setup for both desktop and mobile
+  setupAutocomplete("searchInput", "searchDropdown", "searchForm");
+  setupAutocomplete(
+    "searchInputMobile",
+    "searchDropdownMobile",
+    "searchFormMobile",
+  );
+})();
+
+/* ================================================================
+   LIVE SEARCH — AJAX recipe grid update
+   ================================================================ */
+(function () {
+  const DEBOUNCE_MS = 280;
+  let ajaxTimer = null;
+  let currentQuery = "";
+  let currentFilter =
+    new URLSearchParams(window.location.search).get("filter") || "all";
+  let isLiveMode = false;
+
+  const grid = document.querySelector(".recipe-grid");
+  const sectionTitle = document.getElementById("sectionTitle");
+  const rotdSection = document.querySelector(".rotd-section");
+
+  if (!grid) return; // not on index page
+
+  /* ── Loading spinner overlay ── */
+  const spinner = document.createElement("div");
+  spinner.id = "liveSearchSpinner";
+  spinner.innerHTML = `<div class="lss-inner"><div class="lss-dots"><span></span><span></span><span></span></div><p>Finding recipes…</p></div>`;
+  document.querySelector(".main")?.prepend(spinner);
+
+  /* ── Build a recipe card HTML from JSON ── */
+  function buildCard(r, query) {
+    const imgHTML = r.image_path
+      ? `<img src="${r.image_path}" alt="${r.name}" onerror="this.parentElement.innerHTML='${r.emoji}'" />`
+      : r.emoji;
+
+    const badges = [
+      r.is_spicy ? '<span class="badge badge-spicy">🌶️ Spicy</span>' : "",
+      r.is_quick ? '<span class="badge badge-quick">⚡ Quick</span>' : "",
+      r.is_budget ? '<span class="badge badge-budget">💰 Budget</span>' : "",
+    ].join("");
+
+    const stars = r.avg_rating > 0 ? `<span>⭐ ${r.avg_rating}</span>` : "";
+    const favBtn = `<button class="fav-btn ${r.is_fav ? "active" : ""}"
+      onclick="event.stopPropagation(); handleFav(${r.id}, this)">${r.is_fav ? "❤️" : "🤍"}</button>`;
+
+    const uploader = r.username
+      ? `<div class="card-uploader">by <a href="/user/${r.username}" onclick="event.stopPropagation()">${r.username}</a></div>`
+      : "";
+
+    // Highlight matched query in name
+    let displayName = r.name;
+    if (query) {
+      const idx = r.name.toLowerCase().indexOf(query.toLowerCase());
+      if (idx !== -1) {
+        displayName =
+          r.name.slice(0, idx) +
+          `<mark class="search-highlight">${r.name.slice(idx, idx + query.length)}</mark>` +
+          r.name.slice(idx + query.length);
+      }
+    }
+
+    return `
+      <div class="recipe-card" onclick="openRecipe(${r.id})">
+        <div class="card-img">${imgHTML}</div>
+        <div class="card-body">
+          <div class="card-badges">${badges}</div>
+          <div class="card-title">${displayName}</div>
+          <div class="card-meta">
+            ${r.cook_time ? `<span>⏱ ${r.cook_time}</span>` : ""}
+            ${r.servings ? `<span>👥 ${r.servings} servings</span>` : ""}
+            ${stars}
+            ${favBtn}
+          </div>
+          <div class="card-cost">₱${Math.round(r.total_cost).toLocaleString()} <span>est. total</span></div>
+          ${uploader}
+        </div>
+      </div>`;
+  }
+
+  /* ── Render results into the grid ── */
+  function renderResults(data) {
+    spinner.classList.remove("active");
+
+    if (data.recipes.length === 0) {
+      grid.innerHTML = `
+        <div class="no-results">
+          <div class="icon">🔍</div>
+          <p>No recipes found for "<strong>${data.query || data.filter}</strong>"</p>
+          <small>Try a different ingredient or recipe name</small>
+        </div>`;
+    } else {
+      grid.innerHTML = data.recipes
+        .map((r) => buildCard(r, data.query))
+        .join("");
+    }
+
+    // Update section title
+    if (sectionTitle) {
+      const count = data.count;
+      if (data.query) {
+        sectionTitle.innerHTML = `🔍 ${count} result${count !== 1 ? "s" : ""} for "<em>${data.query}</em>"`;
+      } else {
+        const labels = {
+          all: "✨ Popular Recipes",
+          spicy: "🌶️ Spicy Recipes",
+          quick: "⚡ Quick Meals",
+          budget: "💰 Budget-Friendly",
+          favorites: "❤️ Your Favorites",
+        };
+        sectionTitle.textContent = labels[data.filter] || "✨ Popular Recipes";
+      }
+    }
+
+    // Hide recipe of the day when searching
+    if (rotdSection) {
+      rotdSection.style.display =
+        data.query || data.filter !== "all" ? "none" : "";
+    }
+  }
+
+  /* ── Fetch recipes via AJAX ── */
+  function fetchRecipes(q, filter) {
+    spinner.classList.add("active");
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (filter && filter !== "all") params.set("filter", filter);
+
+    fetch(`/api/search?${params}`)
+      .then((r) => r.json())
+      .then((data) => renderResults(data))
+      .catch(() => spinner.classList.remove("active"));
+
+    // Update browser URL without reload
+    const url = new URL(window.location);
+    q ? url.searchParams.set("q", q) : url.searchParams.delete("q");
+    filter !== "all"
+      ? url.searchParams.set("filter", filter)
+      : url.searchParams.delete("filter");
+    window.history.replaceState({}, "", url);
+  }
+
+  /* ── Hook into both search inputs ── */
+  function hookInput(inputId, formId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    input.addEventListener("input", function () {
+      const q = input.value.trim();
+      currentQuery = q;
+
+      // Sync both inputs
+      ["searchInput", "searchInputMobile"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el && el !== input) el.value = q;
+      });
+
+      clearTimeout(ajaxTimer);
+      if (q.length === 0) {
+        // Reset to default view
+        isLiveMode = false;
+        fetchRecipes("", currentFilter);
+        return;
+      }
+      isLiveMode = true;
+      ajaxTimer = setTimeout(() => fetchRecipes(q, currentFilter), DEBOUNCE_MS);
+    });
+
+    // Prevent form submit — we handle it via AJAX
+    const form = document.getElementById(formId);
+    if (form) {
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        clearTimeout(ajaxTimer);
+        fetchRecipes(currentQuery, currentFilter);
+      });
+    }
+  }
+
+  hookInput("searchInput", "searchForm");
+  hookInput("searchInputMobile", "searchFormMobile");
+
+  /* ── Override setFilter to use AJAX ── */
+  window._originalSetFilter = window.setFilter;
+  window.setFilter = function (filter, btn) {
+    currentFilter = filter;
+
+    // Update active state on ALL filter buttons (desktop + mobile pills)
+    document
+      .querySelectorAll(".filter-btn, .mobile-pill")
+      .forEach((el) => el.classList.remove("active"));
+    if (btn) btn.classList.add("active");
+
+    // Also sync the hidden filter inputs
+    ["hiddenFilter", "hiddenFilterMobile"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = filter;
+    });
+
+    fetchRecipes(currentQuery, filter);
+  };
+})();

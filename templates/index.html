@@ -1,10 +1,5 @@
 <!doctype html>
 <html lang="en" id="htmlRoot">
-  <!-- ============================================================
-     Cooking INA — Flask/Jinja2 Version
-     Preserves all original UI, adds auth + backend features
-     ============================================================ -->
-
   <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
 </head>
@@ -44,28 +39,27 @@
           >Cooking <span>INA</span></a
         >
 
-        <form
-          class="search-bar"
-          method="GET"
-          action="{{ url_for('index') }}"
-          id="searchForm"
-        >
-          <input
-            type="hidden"
-            name="filter"
-            id="hiddenFilter"
-            value="{{ active_filter }}"
-          />
-          <input
-            type="text"
-            name="q"
-            id="searchInput"
-            placeholder="Search ingredients or recipes..."
-            value="{{ search }}"
-            autocomplete="off"
-          />
-          <button type="submit" class="search-btn">Search</button>
-        </form>
+        <!-- Desktop search bar (hidden on mobile) -->
+        <div class="search-wrapper search-wrapper-desktop">
+          <form
+            class="search-bar-new search-bar-desktop"
+            method="GET"
+            action="{{ url_for('index') }}"
+            id="searchForm"
+          >
+            <input type="hidden" name="filter" id="hiddenFilter" value="{{ active_filter }}" />
+            <span class="search-icon-new">🔍</span>
+            <input
+              type="text"
+              name="q"
+              id="searchInput"
+              placeholder="Search recipes, ingredients..."
+              value="{{ search }}"
+              autocomplete="off"
+            />
+          </form>
+          <div class="search-dropdown" id="searchDropdown"></div>
+        </div>
 
         <button
           class="mic-btn"
@@ -123,6 +117,37 @@
         {% endif %}
       </div>
     </header>
+
+    <!-- Mobile search bar (shown only on mobile) -->
+    <div class="mobile-search-wrapper">
+      <div class="search-wrapper search-wrapper-mobile">
+        <form
+          class="search-bar-new search-bar-mobile"
+          method="GET"
+          action="{{ url_for('index') }}"
+          id="searchFormMobile"
+        >
+          <input type="hidden" name="filter" value="{{ active_filter }}" id="hiddenFilterMobile" />
+          <span class="search-icon-new">🔍</span>
+          <input
+            type="text"
+            name="q"
+            placeholder="Search recipes, ingredients..."
+            autocomplete="off"
+            id="searchInputMobile"
+            value="{{ search }}"
+          />
+        </form>
+        <div class="search-dropdown" id="searchDropdownMobile"></div>
+      </div>
+      <div class="mobile-filter-pills">
+        <button class="mobile-pill {% if active_filter == 'all' %}active{% endif %}" onclick="setFilter('all', this)">🍽 All{% if filter_counts.get('all') %} <span class="filter-count">{{ filter_counts['all'] }}</span>{% endif %}</button>
+        <button class="mobile-pill {% if active_filter == 'spicy' %}active{% endif %}" onclick="setFilter('spicy', this)">🌶️ Spicy{% if filter_counts.get('spicy') %} <span class="filter-count">{{ filter_counts['spicy'] }}</span>{% endif %}</button>
+        <button class="mobile-pill {% if active_filter == 'quick' %}active{% endif %}" onclick="setFilter('quick', this)">⚡ Quick{% if filter_counts.get('quick') %} <span class="filter-count">{{ filter_counts['quick'] }}</span>{% endif %}</button>
+        <button class="mobile-pill {% if active_filter == 'budget' %}active{% endif %}" onclick="setFilter('budget', this)">💰 Budget{% if filter_counts.get('budget') %} <span class="filter-count">{{ filter_counts['budget'] }}</span>{% endif %}</button>
+        <button class="mobile-pill {% if active_filter == 'favorites' %}active{% endif %}" onclick="setFilter('favorites', this)">❤️ Favorites{% if filter_counts.get('favorites') %} <span class="filter-count">{{ filter_counts['favorites'] }}</span>{% endif %}</button>
+      </div>
+    </div>
 
     <!-- ============================================================
        FLASH MESSAGES
@@ -240,11 +265,14 @@
        ============================================================ -->
     <div class="main">
       <div class="section-title" id="sectionTitle">
-        {% if search %} 🔍 Results for "{{ search }}" {% elif active_filter ==
-        'favorites' %} ❤️ Your Favorites {% elif active_filter == 'spicy' %} 🌶️
-        Spicy Recipes {% elif active_filter == 'quick' %} ⚡ Quick Meals {% elif
-        active_filter == 'budget' %} 💰 Budget-Friendly {% else %} ✨ Popular
-        Recipes {% endif %}
+        {% if search %}
+          🔍 {{ recipes|length }} result{{ 's' if recipes|length != 1 else '' }} for "<em>{{ search }}</em>"
+        {% elif active_filter == 'favorites' %} ❤️ Your Favorites
+        {% elif active_filter == 'spicy' %} 🌶️ Spicy Recipes
+        {% elif active_filter == 'quick' %} ⚡ Quick Meals
+        {% elif active_filter == 'budget' %} 💰 Budget-Friendly
+        {% else %} ✨ Popular Recipes
+        {% endif %}
       </div>
 
       <div class="recipe-grid">
