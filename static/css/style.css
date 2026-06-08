@@ -296,7 +296,7 @@ header {
 
 .hero {
   text-align: center;
-  padding: 80px 24px 60px;
+  padding: 36px 20px 24px;
   background: linear-gradient(160deg, var(--bg) 0%, var(--bg2) 100%);
   position: relative;
   overflow: hidden;
@@ -315,13 +315,14 @@ header {
 
 .hero h1 {
   font-family: var(--display);
-  font-size: clamp(52px, 8vw, 96px);
+  font-size: 4.5rem;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.04em;
   line-height: 0.95;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   position: relative;
+  text-align: center;
 }
 .hero h1 em {
   color: var(--accent);
@@ -329,12 +330,13 @@ header {
 }
 .hero p {
   color: var(--text2);
-  font-size: clamp(14px, 2vw, 17px);
+  font-size: 0.91rem;
   font-weight: 300;
   line-height: 1.7;
   max-width: 540px;
-  margin: 0 auto 36px;
+  margin: 0 auto 20px;
   position: relative;
+  text-align: center;
 }
 .hero-cta {
   display: inline-flex;
@@ -2767,7 +2769,7 @@ header {
     font-size: 22px;
   }
   .hero {
-    padding: 48px 16px 36px;
+    padding: 36px 16px 24px;
   }
   .auth-card {
     padding: 32px 22px;
@@ -3363,10 +3365,10 @@ header {
 
   /* Hero */
   .hero {
-    padding: 48px 20px 40px;
+    padding: 36px 16px 24px;
   }
   .hero h1 {
-    font-size: clamp(40px, 12vw, 64px);
+    font-size: clamp(28px, 9vw, 48px);
     margin-bottom: 14px;
   }
   .hero p {
