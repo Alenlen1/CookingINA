@@ -167,9 +167,9 @@
         hands-free cooking — all in one place.
       </p>
       {% if user %}
-      <a href="{{ url_for('add_recipe') }}" class="hero-cta"
-        >+ Add Your Recipe</a
-      >
+        <a href="{{ url_for('add_recipe') }}" class="hero-cta">+ Add Your Recipe</a>
+          {% else %}
+      <a href="{{ url_for('register') }}" class="hero-cta">Join to Share Your Recipes</a>
       {% endif %}
     </div>
 
